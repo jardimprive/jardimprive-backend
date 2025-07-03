@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation'; // 🔄 Para redirecionar
 import { motion } from 'framer-motion';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-
 import {
   PieChart, Pie, Cell,
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 
 export default function DashboardPage() {
+  const router = useRouter(); // 🔄 hook para redirecionar
+
   const [userRole, setUserRole] = useState('');
   const [commission, setCommission] = useState(0);
   const [bonus, setBonus] = useState(0);
@@ -33,6 +35,13 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        router.push('/login'); // 🔁 redireciona para login se não estiver logado
+        return;
+      }
+
       const profileRes = await api.get('/users/profile');
       const role = profileRes.data.role;
       setUserRole(role);
@@ -67,6 +76,7 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
+      router.push('/login'); // 🔁 fallback de segurança
     }
   };
 
