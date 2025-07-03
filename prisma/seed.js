@@ -4,31 +4,57 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'admin@jardimprive.com.br';
-  const password = 'admin123';
+  // 🔒 Criação do Admin
+  const adminEmail = 'admin@jardimprive.com.br';
+  const adminPassword = 'admin123';
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+    await prisma.user.create({
+      data: {
+        name: 'Admin Jardim',
+        email: adminEmail,
+        cpf: '00000000000',
+        phone: '11999999999',
+        address: 'Sede Jardim Privé',
+        password: hashedPassword,
+        role: 'ADMIN',
+        status: 'ATIVA',
+      },
+    });
+
+    console.log('✅ Admin criado com sucesso!');
+  } else {
     console.log('✅ Admin já existe');
-    return;
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  // 👩 Criação da vendedora Bruna
+  const brunaEmail = 'bruna@jardimprive.com.br';
+  const brunaPassword = 'bruna123';
 
-  await prisma.user.create({
-    data: {
-      name: 'Admin Jardim',
-      email,
-      cpf: '00000000000',
-      phone: '11999999999',
-      address: 'Sede Jardim Privé',
-      password: hashedPassword,
-      role: 'ADMIN', // isso garante que é admin
-      status: 'ATIVA',
-    },
-  });
+  const existingBruna = await prisma.user.findUnique({ where: { email: brunaEmail } });
+  if (!existingBruna) {
+    const hashedPassword = await bcrypt.hash(brunaPassword, 10);
 
-  console.log('✅ Admin criado com sucesso!');
+    await prisma.user.create({
+      data: {
+        name: 'Bruna Maciel',
+        email: brunaEmail,
+        cpf: '11111111111',
+        phone: '11988888888',
+        address: 'Rua das Vendedoras, 123',
+        password: hashedPassword,
+        role: 'VENDEDORA',
+        status: 'ATIVA',
+      },
+    });
+
+    console.log('✅ Vendedora Bruna criada com sucesso!');
+  } else {
+    console.log('✅ Bruna já existe');
+  }
 }
 
 main()
