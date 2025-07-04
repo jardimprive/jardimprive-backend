@@ -3,7 +3,7 @@ import Cookies from 'js-cookie';
 import Router from 'next/router'; // Import para redirecionar
 
 const api = axios.create({
-  baseURL: 'https://jardimprive-backend.onrender.com/api', // Certifique-se que seu backend usa esse prefixo /api
+  baseURL: 'https://jardimprive-backend.onrender.com/api/users', // ✅ Corrigido: já aponta direto pra /users
 });
 
 // Adiciona o token automaticamente nas requisições
