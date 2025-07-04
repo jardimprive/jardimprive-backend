@@ -1,45 +1,44 @@
 const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient(); // ✅ Correção aqui
+const prisma = new PrismaClient();
 
 async function main() {
-  const senhaAdmin = await bcrypt.hash('admin123', 10);
-  const senhaVendedora = await bcrypt.hash('vendedora123', 10);
+  // Verifica se já existem usuários para não duplicar
+  const existingAdmin = await prisma.user.findUnique({ where: { email: 'admin@jardimprive.com' } });
+  const existingSeller = await prisma.user.findUnique({ where: { email: 'vendedora@jardimprive.com' } });
 
-  // 👑 Admin
-  await prisma.user.upsert({
-    where: { email: 'admin@jardimprive.com' },
-    update: {},
-    create: {
-      name: 'Admin Jardim Privé',
-      email: 'admin@jardimprive.com',
-      password: senhaAdmin,
-      cpf: '00200000000',
-      phone: '00000000000',
-      address: 'Admin Street, 123',
-      role: 'ADMIN',
-      status: 'ATIVA',
-    },
+  if (existingAdmin || existingSeller) {
+    console.log('Usuários já existem. Nada foi criado.');
+    return;
+  }
+
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const sellerPassword = await bcrypt.hash('vendedora123', 10);
+
+  await prisma.user.createMany({
+    data: [
+      {
+        name: 'Administrador',
+        email: 'admin@jardimprive.com',
+        cpf: '00000000000',
+        phone: '11999999999',
+        address: 'Endereço Admin',
+        password: adminPassword,
+        role: 'ADMIN',
+      },
+      {
+        name: 'Vendedora Teste',
+        email: 'vendedora@jardimprive.com',
+        cpf: '11111111111',
+        phone: '11988888888',
+        address: 'Endereço Vendedora',
+        password: sellerPassword,
+        role: 'VENDEDORA',
+      },
+    ],
   });
 
-  // 👩 Vendedora
-  await prisma.user.upsert({
-    where: { email: 'vendedora@jardimprive.com' },
-    update: {},
-    create: {
-      name: 'Vendedora Teste',
-      email: 'vendedora@jardimprive.com',
-      password: senhaVendedora,
-      cpf: '11119111111',
-      phone: '11111111111',
-      address: 'Rua da Vendedora, 456',
-      role: 'VENDEDORA',
-      status: 'ATIVA',
-    },
-  });
-
-  console.log('✅ Admin e Vendedora criados com sucesso!');
+  console.log('✅ Usuários de teste criados com sucesso!');
 }
 
 main()
