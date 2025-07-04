@@ -34,14 +34,14 @@ export default function DashboardPage() {
   });
 
   const fetchData = async () => {
+    const token = Cookies.get('token');
+
+    if (!token) {
+      router.push('/login'); // Não está logado
+      return;
+    }
+
     try {
-      const token = Cookies.get('token');
-
-      if (!token) {
-        router.push('/login'); // 🔁 redireciona para login se não estiver logado
-        return;
-      }
-
       const profileRes = await api.get('/users/profile');
       const role = profileRes.data.role;
       setUserRole(role);
@@ -74,9 +74,14 @@ export default function DashboardPage() {
         const summaryRes = await api.get('/dashboard/summary');
         setSummary(summaryRes.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar dados:', error);
-      router.push('/login'); // 🔁 fallback de segurança
+
+      // Redireciona para login somente se erro for de autenticação
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        Cookies.remove('token');
+        router.push('/login');
+      }
     }
   };
 
