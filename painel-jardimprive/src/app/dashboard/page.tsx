@@ -1,5 +1,5 @@
 'use client';
-
+import Cookies from 'js-cookie';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // 🔄 Para redirecionar
 import { motion } from 'framer-motion';
@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = Cookies.get('token');
 
       if (!token) {
         router.push('/login'); // 🔁 redireciona para login se não estiver logado
