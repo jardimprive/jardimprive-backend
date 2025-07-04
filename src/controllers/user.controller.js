@@ -28,18 +28,30 @@ exports.register = async (req, res) => {
   }
 };
 
-// ✅ Login
+// ✅ Login (com debug)
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+
+  console.log('🟡 Tentando login com:', email, password); // log da tentativa
 
   const user = await prisma.user.findUnique({
     where: { email },
   });
 
-  if (!user) return res.status(400).json({ error: 'Usuário não encontrado' });
+  if (!user) {
+    console.log('🔴 Usuário não encontrado com o e-mail:', email);
+    return res.status(400).json({ error: 'Usuário não encontrado' });
+  }
+
+  console.log('🔵 Usuário encontrado. Senha salva no banco:', user.password);
 
   const validPassword = await bcrypt.compare(password, user.password);
-  if (!validPassword) return res.status(400).json({ error: 'Senha incorreta' });
+  console.log('🟢 Resultado da verificação de senha:', validPassword);
+
+  if (!validPassword) {
+    console.log('🔴 Senha incorreta');
+    return res.status(400).json({ error: 'Senha incorreta' });
+  }
 
   const token = jwt.sign(
     { id: user.id, role: user.role },
@@ -55,6 +67,8 @@ exports.login = async (req, res) => {
       userAgent: req.headers['user-agent'] || 'Desconhecido',
     },
   });
+
+  console.log('✅ Login realizado com sucesso para:', user.email);
 
   res.json({ message: 'Login realizado com sucesso', token });
 };
