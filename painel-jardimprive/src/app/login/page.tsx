@@ -27,7 +27,7 @@ export default function LoginPage() {
   }
 
   const goToRegister = () => {
-    router.push('/register') // ✅ redireciona para página de cadastro
+    router.push('/cadastro') // ✅ redireciona para página de cadastro
   }
 
   return (
