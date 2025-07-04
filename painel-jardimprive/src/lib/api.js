@@ -2,7 +2,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const api = axios.create({
-  baseURL: 'https://jardimprive-backend.onrender.com/', // 🔥 Troca para o endereço do backend online depois
+  baseURL: 'https://jardimprive-backend.onrender.com/api', // ✅ Corrigido: inclui /api
 });
 
 // 👉 Adiciona o token automaticamente nas requisições
