@@ -1,68 +1,60 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
-import api from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react'
+import api from '@/lib/api'
+import { useRouter } from 'next/navigation'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleLogin = async () => {
+    setLoading(true)
     try {
-      const response = await api.post('/auth/login', {
-        email,
-        password,
-      });
-
-      const token = response.data.token;
-      Cookies.set('token', token);
-
-      router.push('/dashboard');
+      const res = await api.post('/users/login', { email, password })
+      const { token } = res.data
+      localStorage.setItem('token', token)
+      router.push('/dashboard') // redireciona após login
     } catch (err) {
-      console.error(err);
-      setError('Email ou senha inválidos');
+      alert('Login falhou. Verifique suas credenciais.')
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  const goToRegister = () => {
+    router.push('/register') // ✅ redireciona para página de cadastro
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Card className="w-[400px]">
-        <CardHeader>
-          <CardTitle className="text-center">Login Jardim Privé</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 space-y-4">
+      <h1 className="text-2xl font-bold">Login</h1>
 
-            <Button className="w-full" type="submit">
-              Entrar
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <Input
+        type="email"
+        placeholder="E-mail"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <Input
+        type="password"
+        placeholder="Senha"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+
+      <Button onClick={handleLogin} disabled={loading} className="w-full max-w-xs">
+        {loading ? 'Entrando...' : 'Entrar'}
+      </Button>
+
+      <Button variant="outline" onClick={goToRegister} className="w-full max-w-xs">
+        Criar conta
+      </Button>
     </div>
-  );
+  )
 }
