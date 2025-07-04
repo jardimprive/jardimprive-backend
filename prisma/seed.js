@@ -1,62 +1,52 @@
-require('dotenv').config();
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
+const prisma = new PrismaClient(); // ✅ Correção aqui
 
 async function main() {
-  // 🔒 Criação do Admin
-  const adminEmail = 'admin@jardimprive.com.br';
-  const adminPassword = 'admin123';
+  const senhaAdmin = await bcrypt.hash('admin123', 10);
+  const senhaVendedora = await bcrypt.hash('vendedora123', 10);
 
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
-  if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  // 👑 Admin
+  await prisma.user.upsert({
+    where: { email: 'admin@jardimprive.com' },
+    update: {},
+    create: {
+      name: 'Admin Jardim Privé',
+      email: 'admin@jardimprive.com',
+      password: senhaAdmin,
+      cpf: '00200000000',
+      phone: '00000000000',
+      address: 'Admin Street, 123',
+      role: 'ADMIN',
+      status: 'ATIVA',
+    },
+  });
 
-    await prisma.user.create({
-      data: {
-        name: 'Admin Jardim',
-        email: adminEmail,
-        cpf: '00000000000',
-        phone: '11999999999',
-        address: 'Sede Jardim Privé',
-        password: hashedPassword,
-        role: 'ADMIN',
-        status: 'ATIVA',
-      },
-    });
+  // 👩 Vendedora
+  await prisma.user.upsert({
+    where: { email: 'vendedora@jardimprive.com' },
+    update: {},
+    create: {
+      name: 'Vendedora Teste',
+      email: 'vendedora@jardimprive.com',
+      password: senhaVendedora,
+      cpf: '11119111111',
+      phone: '11111111111',
+      address: 'Rua da Vendedora, 456',
+      role: 'VENDEDORA',
+      status: 'ATIVA',
+    },
+  });
 
-    console.log('✅ Admin criado com sucesso!');
-  } else {
-    console.log('✅ Admin já existe');
-  }
-
-  // 👩 Criação da vendedora Bruna
-  const brunaEmail = 'bruna@jardimprive.com.br';
-  const brunaPassword = 'bruna123';
-
-  const existingBruna = await prisma.user.findUnique({ where: { email: brunaEmail } });
-  if (!existingBruna) {
-    const hashedPassword = await bcrypt.hash(brunaPassword, 10);
-
-    await prisma.user.create({
-      data: {
-        name: 'Bruna Maciel',
-        email: brunaEmail,
-        cpf: '11111111111',
-        phone: '11988888888',
-        address: 'Rua das Vendedoras, 123',
-        password: hashedPassword,
-        role: 'VENDEDORA',
-        status: 'ATIVA',
-      },
-    });
-
-    console.log('✅ Vendedora Bruna criada com sucesso!');
-  } else {
-    console.log('✅ Bruna já existe');
-  }
+  console.log('✅ Admin e Vendedora criados com sucesso!');
 }
 
 main()
-  .catch((e) => console.error(e))
-  .finally(() => prisma.$disconnect());
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
