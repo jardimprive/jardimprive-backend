@@ -35,6 +35,7 @@ export default function CadastroPage() {
     try {
       await api.post('/users/register', {
         ...form,
+        role: 'VENDEDORA', // ✅ Campo necessário para o backend
       });
 
       setSuccess('Cadastro realizado com sucesso!');
@@ -42,7 +43,12 @@ export default function CadastroPage() {
         router.push('/login'); // Redireciona para login
       }, 2000);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao cadastrar.');
+      console.error(err.response?.data); // útil para debug no console
+      setError(
+        err.response?.data?.details ||
+        err.response?.data?.error ||
+        'Erro ao cadastrar.'
+      );
     } finally {
       setLoading(false);
     }
