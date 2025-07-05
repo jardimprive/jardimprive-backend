@@ -1,12 +1,12 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import Router from 'next/router'; // Import para redirecionar
+import Router from 'next/router';
 
 const api = axios.create({
-  baseURL: 'https://jardimprive-backend.onrender.com/api/users', // ✅ Corrigido: já aponta direto pra /users
+  baseURL: 'https://jardimprive-backend.onrender.com/api', // Corrigido: baseURL só até /api
 });
 
-// Adiciona o token automaticamente nas requisições
+// Adiciona token automaticamente nas requisições
 api.interceptors.request.use((config) => {
   const token = Cookies.get('token');
   if (token) {
@@ -15,7 +15,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor para resposta — trata erro 401 (token inválido ou expirado)
+// Intercepta respostas para tratar 401 (token inválido/expirado)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
