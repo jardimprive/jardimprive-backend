@@ -1,5 +1,5 @@
 'use client';
-import Cookies from 'js-cookie';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; // 🔄 Para redirecionar
 import { motion } from 'framer-motion';
@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 export default function DashboardPage() {
-  const router = useRouter(); // 🔄 hook para redirecionar
+  const router = useRouter();
 
   const [userRole, setUserRole] = useState('');
   const [commission, setCommission] = useState(0);
@@ -34,13 +34,6 @@ export default function DashboardPage() {
   });
 
   const fetchData = async () => {
-    const token = Cookies.get('token');
-
-    if (!token) {
-      router.push('/login'); // Não está logado
-      return;
-    }
-
     try {
       const profileRes = await api.get('/users/profile');
       const role = profileRes.data.role;
@@ -77,15 +70,19 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Erro ao buscar dados:', error);
 
-      // Redireciona para login somente se erro for de autenticação
       if (error.response?.status === 401 || error.response?.status === 403) {
-        Cookies.remove('token');
+        localStorage.removeItem('token');
         router.push('/login');
       }
     }
   };
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
     fetchData();
   }, []);
 
