@@ -15,7 +15,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true)
     try {
-      const res = await api.post('/users/login', { email, password })
+      const res = await api.post('/api/auth/login', { email, password }) // ✅ CORRIGIDO
       const { token } = res.data
       localStorage.setItem('token', token)
       router.push('/dashboard') // redireciona após login
