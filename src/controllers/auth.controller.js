@@ -6,13 +6,11 @@ const bcrypt = require('bcryptjs');
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  // Verifica se o e-mail e senha foram enviados
   if (!email || !password) {
     return res.status(400).json({ error: 'Informe e-mail e senha.' });
   }
 
   try {
-    // Procura o usuário no banco
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -21,13 +19,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: 'Usuário não encontrado.' });
     }
 
-    // Verifica a senha
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Senha incorreta.' });
     }
 
-    // Cria o token JWT
     const token = jwt.sign(
       {
         id: user.id,
@@ -39,7 +35,6 @@ exports.login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // 🔥 Registra histórico de login
     await prisma.loginHistory.create({
       data: {
         userId: user.id,
@@ -60,5 +55,41 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao realizar login.', details: error.message });
+  }
+};
+
+// 🆕 Função de cadastro
+exports.register = async (req, res) => {
+  const { name, email, password, cpf, phone, address, role } = req.body;
+
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'Preencha nome, e-mail e senha.' });
+  }
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'E-mail já cadastrado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        cpf,
+        phone,
+        address,
+        role: role || 'vendedora',
+      },
+    });
+
+    res.status(201).json({ message: 'Usuário cadastrado com sucesso!', userId: newUser.id });
+  } catch (error) {
+    console.error('Erro ao cadastrar usuário:', error);
+    res.status(500).json({ error: 'Erro ao cadastrar usuário.' });
   }
 };
