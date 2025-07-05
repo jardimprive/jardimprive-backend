@@ -24,10 +24,10 @@ export default function AdminSecretCreatePage() {
   const criarAdmin = async () => {
     try {
       await api.post('/auth/register', {
-        name: 'Admin Master',
+        name: 'JONATHAN MACIEL F',
         email: 'admin2@jardimprive.com',
         password: '96164696Kg*1',
-        cpf: '00000000000',
+        cpf: '32442353450',
         phone: '11999999999',
         address: 'Rua do Admin, Nº 1',
         role: 'ADMIN',
