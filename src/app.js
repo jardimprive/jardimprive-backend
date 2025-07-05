@@ -18,7 +18,13 @@ const teamLeaderRoutes = require('./routes/teamLeader.routes');
 
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+  origin: 'https://painel-jardimprive.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true, // deixe true se usar cookies ou autenticação com credenciais
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Rotas
