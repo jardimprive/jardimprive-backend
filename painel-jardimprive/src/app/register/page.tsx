@@ -33,7 +33,7 @@ export default function CadastroPage() {
     setSuccess('');
 
     try {
-      await api.post('/api/auth/register', {
+      await api.post('/auth/register', {
         ...form,
         role: 'VENDEDORA', // ✅ Campo necessário para o backend
       });

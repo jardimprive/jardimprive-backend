@@ -15,7 +15,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true)
     try {
-      const res = await api.post('/api/auth/login', { email, password }) // ✅ CORRIGIDO
+      const res = await api.post('/auth/login', { email, password }) // corrigido
       const { token } = res.data
       localStorage.setItem('token', token)
       router.push('/dashboard') // redireciona após login
@@ -27,7 +27,7 @@ export default function LoginPage() {
   }
 
   const goToRegister = () => {
-    router.push('/register') // ✅ redireciona para página de cadastro
+    router.push('/register') // redireciona para página de cadastro
   }
 
   return (
