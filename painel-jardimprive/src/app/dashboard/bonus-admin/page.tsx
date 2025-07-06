@@ -29,10 +29,13 @@ interface Bonus {
 export default function BonusAdminPage() {
   const [bonusList, setBonusList] = useState<Bonus[]>([]);
   const [search, setSearch] = useState('');
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const router = useRouter();
 
   const fetchBonuses = async () => {
     try {
+      if (typeof window === 'undefined') return;
+
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
@@ -53,6 +56,9 @@ export default function BonusAdminPage() {
 
   const marcarComoPago = async (id: string) => {
     try {
+      if (loadingId) return; // evita chamadas paralelas
+      setLoadingId(id);
+
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
@@ -68,9 +74,12 @@ export default function BonusAdminPage() {
           },
         }
       );
-      fetchBonuses();
+      await fetchBonuses();
     } catch (err) {
       console.error('Erro ao marcar bônus como pago:', err);
+      alert('Erro ao atualizar o status do bônus.');
+    } finally {
+      setLoadingId(null);
     }
   };
 
@@ -119,7 +128,9 @@ export default function BonusAdminPage() {
                 <tr key={b.id} className="border-b even:bg-gray-50">
                   <td className="py-2 px-3 sm:px-4 whitespace-nowrap">{b.user.name}</td>
                   <td className="py-2 px-3 sm:px-4 whitespace-nowrap">{b.user.email}</td>
-                  <td className="py-2 px-3 sm:px-4 whitespace-nowrap">R$ {b.value.toFixed(2)}</td>
+                  <td className="py-2 px-3 sm:px-4 whitespace-nowrap">
+                    R$ {b.value.toFixed(2)}
+                  </td>
                   <td className="py-2 px-3 sm:px-4 whitespace-nowrap">
                     <Badge
                       className={
@@ -142,8 +153,9 @@ export default function BonusAdminPage() {
                         size="sm"
                         className="bg-green-600 hover:bg-green-700 text-white"
                         onClick={() => marcarComoPago(b.id)}
+                        disabled={loadingId === b.id}
                       >
-                        Marcar como PAGO
+                        {loadingId === b.id ? 'Atualizando...' : 'Marcar como PAGO'}
                       </Button>
                     )}
                   </td>

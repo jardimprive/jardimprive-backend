@@ -1,32 +1,30 @@
-import axios from 'axios';
+import axios from 'axios'
 
 const api = axios.create({
   baseURL: 'https://jardimprive-backend.onrender.com/api',
-});
+})
 
-// Adiciona token automaticamente nas requisições
+// Adiciona token automaticamente nas requisições (client-side)
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`
     }
   }
-  return config;
-});
+  return config
+})
 
 // Intercepta 401 (token inválido ou expirado)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';  // redireciona diretamente
-      }
+    if (typeof window !== 'undefined' && error.response?.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
     }
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
-);
+)
 
-export default api;
+export default api

@@ -26,52 +26,45 @@ export default function ProfilePage() {
   });
 
   const [preview, setPreview] = useState<string | null>(null);
-
-  // Estados para senha
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Loading e erros separados
   const [loadingData, setLoadingData] = useState(false);
   const [loadingPass, setLoadingPass] = useState(false);
-
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  // Load user do localStorage ou API
-  const fetchUser = useCallback(async () => {
-    const localData = localStorage.getItem('userProfile');
-    if (localData) {
-      const parsed: User = JSON.parse(localData);
-      setUser(parsed);
-      setPreview(parsed.photo);
-      return;
-    }
-
+  const fetchUserFromApi = useCallback(async () => {
     try {
       const res = await api.get('/me');
       setUser(res.data);
       setPreview(res.data.photo || null);
-      localStorage.setItem('userProfile', JSON.stringify(res.data));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userProfile', JSON.stringify(res.data));
+      }
     } catch (err) {
       console.error('Erro ao buscar perfil:', err);
     }
   }, []);
 
   useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    if (typeof window === 'undefined') return;
 
-  // Validação CPF básica (não considera dígito verificador, só formato)
-  const validateCPF = (cpf: string) => {
-    const re = /^\d{3}\.\d{3}\.\d{3}\-\d{2}$/;
-    return re.test(cpf);
-  };
+    const localData = localStorage.getItem('userProfile');
+    if (localData) {
+      try {
+        const parsed: User = JSON.parse(localData);
+        setUser(parsed);
+        setPreview(parsed.photo);
+      } catch (e) {
+        console.warn('Erro ao ler localStorage, buscando da API.');
+        fetchUserFromApi();
+      }
+    } else {
+      fetchUserFromApi();
+    }
+  }, [fetchUserFromApi]);
 
-  // Validação telefone simples (aceita números, espaços, parênteses, +, -)
-  const validatePhone = (phone: string) => {
-    const re = /^[\d\s()+-]{8,15}$/;
-    return re.test(phone);
-  };
+  const validateCPF = (cpf: string) => /^\d{3}\.\d{3}\.\d{3}\-\d{2}$/.test(cpf);
+  const validatePhone = (phone: string) => /^[\d\s()+-]{8,15}$/.test(phone);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,13 +78,11 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo imagem
     if (!file.type.startsWith('image/')) {
       setErrors((old) => ({ ...old, photo: 'Arquivo deve ser uma imagem' }));
       return;
     }
 
-    // Validar tamanho max 2MB
     if (file.size > 2 * 1024 * 1024) {
       setErrors((old) => ({ ...old, photo: 'Imagem deve ter no máximo 2MB' }));
       return;
@@ -132,11 +123,12 @@ export default function ProfilePage() {
 
       alert('Dados atualizados com sucesso!');
       setErrors({});
-
-      // Atualizar localStorage
       const updatedUser = { ...user, photo: preview };
       setUser(updatedUser);
-      localStorage.setItem('userProfile', JSON.stringify(updatedUser));
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userProfile', JSON.stringify(updatedUser));
+      }
     } catch (err) {
       alert('Erro ao atualizar os dados.');
       console.error(err);
@@ -204,6 +196,7 @@ export default function ProfilePage() {
                 accept="image/*"
                 id="photo-upload"
                 onChange={handlePhotoChange}
+                aria-label="Selecionar nova foto de perfil"
                 aria-describedby="photo-error"
               />
               {errors.photo && (
@@ -295,7 +288,6 @@ export default function ProfilePage() {
             {loadingData ? 'Salvando...' : 'Salvar Dados'}
           </Button>
 
-          {/* Trocar Senha */}
           <hr className="my-6" />
           <h3 className="font-semibold mb-4">🔒 Alterar Senha</h3>
           <div className="space-y-4 max-w-sm">

@@ -28,6 +28,8 @@ export default function VendedoraDetalhesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchVendedora = useCallback(async () => {
+    if (typeof window === 'undefined' || !id) return; // Proteção SSR + id
+
     setLoading(true);
     setError(null);
     try {
@@ -42,7 +44,8 @@ export default function VendedoraDetalhesPage() {
   }, [id]);
 
   const toggleBloqueio = useCallback(async () => {
-    if (!vendedora) return;
+    if (!vendedora || !id) return;
+
     setToggleLoading(true);
     setError(null);
     try {
@@ -59,8 +62,8 @@ export default function VendedoraDetalhesPage() {
   }, [id, vendedora, fetchVendedora]);
 
   useEffect(() => {
-    if (id) fetchVendedora();
-  }, [id, fetchVendedora]);
+    fetchVendedora();
+  }, [fetchVendedora]);
 
   if (loading) {
     return (
@@ -125,9 +128,9 @@ export default function VendedoraDetalhesPage() {
               onClick={toggleBloqueio}
               variant="destructive"
               disabled={toggleLoading}
-              aria-label={`${vendedora.status === 'ATIVA' ? 'Bloquear' : 'Desbloquear'} vendedora ${
-                vendedora.name
-              }`}
+              aria-label={`${
+                vendedora.status === 'ATIVA' ? 'Bloquear' : 'Desbloquear'
+              } vendedora ${vendedora.name}`}
             >
               {toggleLoading
                 ? vendedora.status === 'ATIVA'

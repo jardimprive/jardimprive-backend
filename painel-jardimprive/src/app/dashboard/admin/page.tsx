@@ -42,6 +42,8 @@ export default function DashboardAdminPage() {
 
   const fetchData = async () => {
     try {
+      if (typeof window === 'undefined') return // não faz nada no server
+
       const token = localStorage.getItem('token')
       if (!token) {
         router.push('/login') // redireciona para login se não tiver token

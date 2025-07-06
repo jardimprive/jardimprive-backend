@@ -29,7 +29,7 @@ export default function NovaVendedoraPage() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (field: string, value: string) => {
-    setForm({ ...form, [field]: value });
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,11 +48,14 @@ export default function NovaVendedoraPage() {
         role: 'VENDEDORA',
       });
 
-      alert('✅ Vendedora cadastrada com sucesso!');
+      if (typeof window !== 'undefined') {
+        alert('✅ Vendedora cadastrada com sucesso!');
+      }
+
       router.push('/dashboard/vendedoras');
     } catch (err: any) {
       console.error('Erro ao cadastrar vendedora:', err);
-      setErrorMsg(err.response?.data?.error || 'Erro ao cadastrar vendedora');
+      setErrorMsg(err.response?.data?.error || 'Erro ao cadastrar vendedora.');
     } finally {
       setLoading(false);
     }
@@ -74,6 +77,7 @@ export default function NovaVendedoraPage() {
               <div
                 className="bg-red-100 text-red-700 px-4 py-2 rounded text-sm"
                 role="alert"
+                aria-live="assertive"
               >
                 {errorMsg}
               </div>
@@ -88,6 +92,7 @@ export default function NovaVendedoraPage() {
                 required
               />
             </div>
+
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -98,6 +103,7 @@ export default function NovaVendedoraPage() {
                 required
               />
             </div>
+
             <div>
               <Label htmlFor="password">Senha</Label>
               <Input
@@ -111,6 +117,7 @@ export default function NovaVendedoraPage() {
                 Mínimo de 6 caracteres.
               </p>
             </div>
+
             <div>
               <Label htmlFor="cpf">CPF</Label>
               <Input
@@ -119,6 +126,7 @@ export default function NovaVendedoraPage() {
                 onChange={(e) => handleChange('cpf', e.target.value)}
               />
             </div>
+
             <div>
               <Label htmlFor="phone">Telefone</Label>
               <Input
@@ -127,6 +135,7 @@ export default function NovaVendedoraPage() {
                 onChange={(e) => handleChange('phone', e.target.value)}
               />
             </div>
+
             <div>
               <Label htmlFor="address">Endereço</Label>
               <Input
@@ -140,6 +149,8 @@ export default function NovaVendedoraPage() {
               type="submit"
               className="mt-4 w-full sm:w-auto"
               disabled={loading}
+              aria-busy={loading}
+              aria-label="Cadastrar nova vendedora"
             >
               {loading ? 'Cadastrando...' : 'Cadastrar Vendedora'}
             </Button>

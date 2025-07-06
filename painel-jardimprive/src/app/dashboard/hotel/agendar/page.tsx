@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 
 interface Diaria {
   id: string;
@@ -16,15 +16,19 @@ interface Diaria {
 export default function AgendarHotelPage() {
   const [minhaDiaria, setMinhaDiaria] = useState<Diaria | null>(null);
   const [data, setData] = useState('');
+  const [carregando, setCarregando] = useState(true);
 
   const fetchMinhaDiaria = async () => {
     try {
+      setCarregando(true);
       const res = await api.get('/hotel/minha-diaria');
       if (res.data?.date) {
         setMinhaDiaria(res.data);
       }
     } catch (err) {
       console.error('Erro ao buscar diária:', err);
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -48,16 +52,23 @@ export default function AgendarHotelPage() {
     fetchMinhaDiaria();
   }, []);
 
+  const dataFormatada =
+    minhaDiaria?.date && isValid(parseISO(minhaDiaria.date))
+      ? format(parseISO(minhaDiaria.date), 'dd/MM/yyyy')
+      : null;
+
   return (
     <Card className="p-6 max-w-md mx-auto">
       <CardHeader>
         <CardTitle>🏨 Agendar Diária no Hotel</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {minhaDiaria ? (
+        {carregando ? (
+          <p className="text-sm text-muted-foreground">Carregando sua diária...</p>
+        ) : minhaDiaria && dataFormatada ? (
           <p className="text-sm">
             Você já agendou sua diária para o dia:{' '}
-            <strong>{format(new Date(minhaDiaria.date), 'dd/MM/yyyy')}</strong>
+            <strong>{dataFormatada}</strong>
           </p>
         ) : (
           <>

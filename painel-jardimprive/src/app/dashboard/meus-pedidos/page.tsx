@@ -3,12 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,12 +37,14 @@ export default function MeusPedidosPage() {
   const [busca, setBusca] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('');
   const router = useRouter();
+  const [erro, setErro] = useState<string | null>(null);
 
   const fetchPedidos = async () => {
     try {
       const res = await api.get('/orders');
       setPedidos(res.data);
     } catch (err) {
+      setErro('Erro ao carregar pedidos.');
       console.error('Erro ao buscar pedidos:', err);
     }
   };
@@ -120,6 +117,9 @@ export default function MeusPedidosPage() {
             </Select>
           </div>
         </div>
+
+        {/* Mensagem de erro */}
+        {erro && <p className="text-sm text-red-500">{erro}</p>}
 
         {pedidosFiltrados.length === 0 ? (
           <p>Você ainda não realizou pedidos.</p>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -29,7 +29,9 @@ export default function VendedorasPage() {
       setVendedoras(res.data);
     } catch (err) {
       console.error('Erro ao buscar vendedoras:', err);
-      alert('Erro ao buscar vendedoras.');
+      if (typeof window !== 'undefined') {
+        alert('Erro ao buscar vendedoras.'); // Substituir por toast futuramente
+      }
     }
   };
 
@@ -39,10 +41,12 @@ export default function VendedorasPage() {
       await api.patch(`/users/admin/sellers/${id}/status`, {
         status: status === 'ATIVA' ? 'INATIVA' : 'ATIVA',
       });
-      fetchVendedoras();
+      await fetchVendedoras();
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
-      alert('Erro ao atualizar status da vendedora.');
+      if (typeof window !== 'undefined') {
+        alert('Erro ao atualizar status da vendedora.'); // Substituir por toast futuramente
+      }
     } finally {
       setLoadingId(null);
     }
@@ -65,7 +69,7 @@ export default function VendedorasPage() {
         <CardContent className="overflow-x-auto">
           <table className="min-w-[700px] w-full text-sm text-left">
             <thead>
-              <tr className="border-b bg-muted">
+              <tr className="border-b bg-muted text-muted-foreground">
                 <th className="py-2 px-4">Nome</th>
                 <th className="py-2 px-4">E-mail</th>
                 <th className="py-2 px-4">Telefone</th>
@@ -76,35 +80,39 @@ export default function VendedorasPage() {
               </tr>
             </thead>
             <tbody>
-              {vendedoras.map((v) => (
-                <tr key={v.id} className="border-b">
-                  <td className="py-2 px-4">{v.name}</td>
-                  <td className="py-2 px-4 break-all">{v.email}</td>
-                  <td className="py-2 px-4">{v.phone || '-'}</td>
-                  <td className="py-2 px-4">{v.status}</td>
-                  <td className="py-2 px-4">{v.isBlocked ? 'Sim' : 'Não'}</td>
-                  <td className="py-2 px-4">
-                    {format(new Date(v.createdAt), 'dd/MM/yyyy')}
-                  </td>
-                  <td className="py-2 px-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                      <Switch
-                        checked={v.status === 'ATIVA'}
-                        onCheckedChange={() => toggleStatus(v.id, v.status)}
-                        disabled={loadingId === v.id}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/dashboard/vendedoras/${v.id}`)}
-                      >
-                        👁 Ver perfil
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {vendedoras.length === 0 && (
+              {vendedoras.length > 0 ? (
+                vendedoras.map((v) => (
+                  <tr key={v.id} className="border-b hover:bg-accent/40 transition">
+                    <td className="py-2 px-4">{v.name}</td>
+                    <td className="py-2 px-4 break-all">{v.email}</td>
+                    <td className="py-2 px-4">{v.phone || '-'}</td>
+                    <td className="py-2 px-4">{v.status}</td>
+                    <td className="py-2 px-4">{v.isBlocked ? 'Sim' : 'Não'}</td>
+                    <td className="py-2 px-4">
+                      {format(new Date(v.createdAt), 'dd/MM/yyyy')}
+                    </td>
+                    <td className="py-2 px-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <Switch
+                          checked={v.status === 'ATIVA'}
+                          onCheckedChange={() => toggleStatus(v.id, v.status)}
+                          disabled={loadingId === v.id}
+                          aria-label={`Alternar status de ${v.name}`}
+                          className={loadingId === v.id ? 'opacity-50' : ''}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/dashboard/vendedoras/${v.id}`)}
+                          aria-label={`Ver perfil de ${v.name}`}
+                        >
+                          👁 Ver perfil
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
                   <td colSpan={7} className="text-center py-4 text-muted-foreground">
                     Nenhuma vendedora cadastrada.

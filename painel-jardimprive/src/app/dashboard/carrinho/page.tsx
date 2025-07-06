@@ -18,14 +18,16 @@ export default function CarrinhoPage() {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('carrinho');
-      if (saved) {
-        setCarrinho(JSON.parse(saved));
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('carrinho');
+        if (saved) {
+          setCarrinho(JSON.parse(saved));
+        }
+      } catch {
+        localStorage.removeItem('carrinho');
+        setCarrinho([]);
       }
-    } catch {
-      localStorage.removeItem('carrinho');
-      setCarrinho([]);
     }
   }, []);
 
@@ -34,19 +36,27 @@ export default function CarrinhoPage() {
     const novoCarrinho = [...carrinho];
     novoCarrinho[index].quantity = quantidade;
     setCarrinho(novoCarrinho);
-    localStorage.setItem('carrinho', JSON.stringify(novoCarrinho));
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('carrinho', JSON.stringify(novoCarrinho));
+    }
   };
 
   const removerItem = (index: number) => {
     const novoCarrinho = carrinho.filter((_, i) => i !== index);
     setCarrinho(novoCarrinho);
-    localStorage.setItem('carrinho', JSON.stringify(novoCarrinho));
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('carrinho', JSON.stringify(novoCarrinho));
+    }
   };
 
   const limparCarrinho = () => {
-    if (confirm('Deseja realmente esvaziar o carrinho?')) {
-      localStorage.removeItem('carrinho');
-      setCarrinho([]);
+    if (typeof window !== 'undefined') {
+      if (confirm('Deseja realmente esvaziar o carrinho?')) {
+        localStorage.removeItem('carrinho');
+        setCarrinho([]);
+      }
     }
   };
 

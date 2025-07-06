@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,49 +35,44 @@ export default function OrdersPage() {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [address, setAddress] = useState("");
-
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
 
-  // Carregar estado do localStorage ao montar
+  // Carregar estado do localStorage ao montar (apenas no cliente)
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    const savedPayment = localStorage.getItem("paymentMethod");
-    const savedAddress = localStorage.getItem("address");
+    if (typeof window !== "undefined") {
+      const savedCart = localStorage.getItem("cart");
+      const savedPayment = localStorage.getItem("paymentMethod");
+      const savedAddress = localStorage.getItem("address");
 
-    if (savedCart) setCart(JSON.parse(savedCart));
-    if (savedPayment) setPaymentMethod(savedPayment);
-    if (savedAddress) setAddress(savedAddress);
+      if (savedCart) setCart(JSON.parse(savedCart));
+      if (savedPayment) setPaymentMethod(savedPayment);
+      if (savedAddress) setAddress(savedAddress);
 
-    // Buscar pedidos
-    const fetchOrders = async () => {
-      try {
-        const res = await api.get("/order");
-        setOrders(res.data);
-      } catch (error) {
-        console.error("Erro ao buscar pedidos:", error);
-      } finally {
-        setLoadingOrders(false);
-      }
-    };
+      // Buscar pedidos
+      const fetchOrders = async () => {
+        try {
+          const res = await api.get("/order");
+          setOrders(res.data);
+        } catch (error) {
+          console.error("Erro ao buscar pedidos:", error);
+        } finally {
+          setLoadingOrders(false);
+        }
+      };
 
-    fetchOrders();
+      fetchOrders();
+    }
   }, []);
 
-  // Salvar no localStorage quando cart mudar
+  // Salvar no localStorage quando cart, paymentMethod, ou address mudar
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
-
-  // Salvar paymentMethod no localStorage
-  useEffect(() => {
-    localStorage.setItem("paymentMethod", paymentMethod);
-  }, [paymentMethod]);
-
-  // Salvar address no localStorage
-  useEffect(() => {
-    localStorage.setItem("address", address);
-  }, [address]);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cart", JSON.stringify(cart));
+      localStorage.setItem("paymentMethod", paymentMethod);
+      localStorage.setItem("address", address);
+    }
+  }, [cart, paymentMethod, address]);
 
   const handleAdd = (id: string) => {
     setCart((prev) => ({

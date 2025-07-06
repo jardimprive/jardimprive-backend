@@ -12,38 +12,48 @@ import { Switch } from '@/components/ui/switch';
 export default function CadastrarProdutoPage() {
   const router = useRouter();
 
-  // Inicializa estados com valores do localStorage, se existirem
-  const [name, setName] = useState(() => localStorage.getItem('produto_name') || '');
-  const [description, setDescription] = useState(() => localStorage.getItem('produto_description') || '');
-  const [image, setImage] = useState(() => localStorage.getItem('produto_image') || '');
-  const [active, setActive] = useState(() => {
-    const saved = localStorage.getItem('produto_active');
-    return saved === null ? true : saved === 'true';
-  });
-  const [variations, setVariations] = useState<any[]>(() => {
-    const saved = localStorage.getItem('produto_variations');
-    return saved ? JSON.parse(saved) : [{ sku: '', size: '', price: 0, stock: 0 }];
-  });
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [image, setImage] = useState('');
+  const [active, setActive] = useState(true);
+  const [variations, setVariations] = useState<any[]>([
+    { sku: '', size: '', price: 0, stock: 0 },
+  ]);
 
-  // Atualiza localStorage quando estados mudam
+  // Carregar do localStorage só no client após o componente montar
   useEffect(() => {
-    localStorage.setItem('produto_name', name);
+    if (typeof window !== 'undefined') {
+      setName(localStorage.getItem('produto_name') || '');
+      setDescription(localStorage.getItem('produto_description') || '');
+      setImage(localStorage.getItem('produto_image') || '');
+      const savedActive = localStorage.getItem('produto_active');
+      setActive(savedActive === null ? true : savedActive === 'true');
+
+      const savedVariations = localStorage.getItem('produto_variations');
+      setVariations(
+        savedVariations ? JSON.parse(savedVariations) : [{ sku: '', size: '', price: 0, stock: 0 }]
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('produto_name', name);
   }, [name]);
 
   useEffect(() => {
-    localStorage.setItem('produto_description', description);
+    if (typeof window !== 'undefined') localStorage.setItem('produto_description', description);
   }, [description]);
 
   useEffect(() => {
-    localStorage.setItem('produto_image', image);
+    if (typeof window !== 'undefined') localStorage.setItem('produto_image', image);
   }, [image]);
 
   useEffect(() => {
-    localStorage.setItem('produto_active', active.toString());
+    if (typeof window !== 'undefined') localStorage.setItem('produto_active', active.toString());
   }, [active]);
 
   useEffect(() => {
-    localStorage.setItem('produto_variations', JSON.stringify(variations));
+    if (typeof window !== 'undefined') localStorage.setItem('produto_variations', JSON.stringify(variations));
   }, [variations]);
 
   const handleChangeVariation = (index: number, field: string, value: any) => {
@@ -80,12 +90,15 @@ export default function CadastrarProdutoPage() {
       });
 
       alert('Produto cadastrado com sucesso!');
+
       // Limpa localStorage após sucesso
-      localStorage.removeItem('produto_name');
-      localStorage.removeItem('produto_description');
-      localStorage.removeItem('produto_image');
-      localStorage.removeItem('produto_active');
-      localStorage.removeItem('produto_variations');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('produto_name');
+        localStorage.removeItem('produto_description');
+        localStorage.removeItem('produto_image');
+        localStorage.removeItem('produto_active');
+        localStorage.removeItem('produto_variations');
+      }
 
       router.push('/dashboard/produtos');
     } catch (err) {

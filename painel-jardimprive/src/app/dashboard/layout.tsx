@@ -21,6 +21,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [temDiaria, setTemDiaria] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -33,6 +35,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const verificarDiaria = async () => {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -55,8 +59,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    router.push('/login');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      router.push('/login');
+    }
   };
 
   const baseMenu: MenuItem[] = [

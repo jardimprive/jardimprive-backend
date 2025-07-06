@@ -34,6 +34,8 @@ export default function AtividadesPage() {
 
   const fetchAtividades = async () => {
     try {
+      if (typeof window === 'undefined') return;
+
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
@@ -68,7 +70,9 @@ export default function AtividadesPage() {
         <div className="w-full sm:w-64">
           <Select value={filtro} onValueChange={setFiltro}>
             <SelectTrigger>
-              <SelectValue>Filtrar por tipo</SelectValue>
+              <SelectValue>
+                {filtro === '' ? 'Todos' : filtro}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Todos</SelectItem>
@@ -85,9 +89,9 @@ export default function AtividadesPage() {
         {atividadesFiltradas.length === 0 ? (
           <p>Nenhuma atividade encontrada.</p>
         ) : (
-          <div className="space-y-3">
+          <ul className="space-y-3">
             {atividadesFiltradas.map((a) => (
-              <div
+              <li
                 key={a.id}
                 className="border rounded-md p-3 bg-white shadow-sm text-sm"
               >
@@ -98,9 +102,9 @@ export default function AtividadesPage() {
                 <p>Status: <strong>{a.status}</strong></p>
                 <p>Valor: R$ {a.valor.toFixed(2)}</p>
                 {a.detalhes && <p>Detalhes: {a.detalhes}</p>}
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </CardContent>
     </Card>

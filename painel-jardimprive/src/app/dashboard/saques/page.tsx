@@ -26,11 +26,11 @@ export default function SaquesAdminPage() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSaques = useCallback(async () => {
+    if (typeof window === 'undefined') return; // Evita chamadas no SSR
+
     setLoading(true);
     setError(null);
     try {
-      // Se a api internamente já busca o token no localStorage, tudo certo.
-      // Se precisar, pode passar o token aqui manualmente.
       const res = await api.get('/withdrawal/admin');
       setSaques(res.data);
     } catch (err) {
@@ -49,7 +49,7 @@ export default function SaquesAdminPage() {
         await api.patch(`/withdrawal/${id}`, { status });
         await fetchSaques();
       } catch (err) {
-        console.error('Erro ao atualizar status do saque:', err);
+        console.error(`Erro ao atualizar status do saque ${id}:`, err);
         setError('Erro ao atualizar o status. Tente novamente.');
       } finally {
         setActionLoading(null);
@@ -72,11 +72,13 @@ export default function SaquesAdminPage() {
           {error && (
             <div
               role="alert"
+              aria-live="polite"
               className="mb-4 p-3 rounded bg-red-100 text-red-700 border border-red-400"
             >
               {error}
             </div>
           )}
+
           {loading ? (
             <p className="text-center py-10 text-muted-foreground">Carregando...</p>
           ) : (
@@ -88,24 +90,12 @@ export default function SaquesAdminPage() {
               >
                 <thead>
                   <tr className="border-b bg-gray-50">
-                    <th scope="col" className="py-2 px-4 font-semibold">
-                      Vendedora
-                    </th>
-                    <th scope="col" className="py-2 px-4 font-semibold">
-                      Valor
-                    </th>
-                    <th scope="col" className="py-2 px-4 font-semibold">
-                      Status
-                    </th>
-                    <th scope="col" className="py-2 px-4 font-semibold">
-                      PIX
-                    </th>
-                    <th scope="col" className="py-2 px-4 font-semibold">
-                      Data
-                    </th>
-                    <th scope="col" className="py-2 px-4 font-semibold">
-                      Ações
-                    </th>
+                    <th className="py-2 px-4 font-semibold">Vendedora</th>
+                    <th className="py-2 px-4 font-semibold">Valor</th>
+                    <th className="py-2 px-4 font-semibold">Status</th>
+                    <th className="py-2 px-4 font-semibold">PIX</th>
+                    <th className="py-2 px-4 font-semibold">Data</th>
+                    <th className="py-2 px-4 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody>

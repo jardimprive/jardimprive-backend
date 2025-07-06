@@ -28,21 +28,22 @@ export default function DetalhesAtividadePage() {
 
   const fetchDetalhes = async () => {
     try {
+      if (typeof window === 'undefined') return; // garante client-side
+
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
         return;
       }
 
-      const res = await api.get('/dashboard/atividade', {
+      // Usar rota específica para buscar a atividade pelo id
+      const res = await api.get(`/dashboard/atividade/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const historico: Atividade[] = res.data;
-      const encontrada = historico.find((a) => a.id === id);
-      setAtividade(encontrada || null);
+      setAtividade(res.data);
     } catch (err) {
       console.error('Erro ao buscar detalhes da atividade:', err);
       router.push('/login');

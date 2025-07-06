@@ -19,6 +19,8 @@ export default function BonusPage() {
   useEffect(() => {
     const fetchBonus = async () => {
       try {
+        if (typeof window === 'undefined') return;
+
         const token = localStorage.getItem('token');
         if (!token) {
           router.push('/login');
@@ -57,7 +59,9 @@ export default function BonusPage() {
                   className="flex flex-col sm:flex-row justify-between border rounded-lg p-4 bg-white"
                 >
                   <div>
-                    <p className="font-semibold text-lg">Valor: R$ {item.amount.toFixed(2)}</p>
+                    <p className="font-semibold text-lg">
+                      Valor: R$ {item.amount.toFixed(2)}
+                    </p>
                     <p className="text-sm text-gray-500">
                       Data: {new Date(item.createdAt).toLocaleDateString()}
                     </p>

@@ -26,6 +26,7 @@ export default function CheckoutPage() {
   const [endereco, setEndereco] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Pagamento>('AVISTA');
   const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('carrinho');
@@ -42,6 +43,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!['AVISTA', 'PARCELADO', 'CARTAO'].includes(formaPagamento)) {
+      alert('Selecione uma forma de pagamento válida.');
+      return;
+    }
+
     const payload = {
       items: carrinho.map((item) => ({
         variationId: item.variationId,
@@ -54,6 +60,7 @@ export default function CheckoutPage() {
 
     try {
       setCarregando(true);
+      setErro(null); // Limpar erro anterior, se houver
 
       if (formaPagamento === 'CARTAO') {
         const res = await api.post('/orders/checkout', payload);
@@ -61,7 +68,7 @@ export default function CheckoutPage() {
           localStorage.removeItem('carrinho');
           window.location.href = res.data.checkoutUrl;
         } else {
-          alert('Erro ao gerar link de pagamento.');
+          setErro('Erro ao gerar link de pagamento.');
         }
       } else {
         const res = await api.post('/orders', {
@@ -76,7 +83,7 @@ export default function CheckoutPage() {
       }
     } catch (err) {
       console.error('Erro ao criar pedido:', err);
-      alert('Erro ao criar pedido');
+      setErro('Erro ao criar pedido.');
     } finally {
       setCarregando(false);
     }
@@ -138,6 +145,9 @@ export default function CheckoutPage() {
             </div>
           </RadioGroup>
         </div>
+
+        {/* Erro */}
+        {erro && <p className="text-sm text-red-500">{erro}</p>}
 
         <Button
           className="mt-4 w-full"

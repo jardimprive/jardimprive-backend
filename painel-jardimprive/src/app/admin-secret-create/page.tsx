@@ -13,17 +13,20 @@ export default function AdminSecretCreatePage() {
   const senhaSecreta = '21324658Br*1' // ⚠️ Senha visível no front-end: cuidado!
 
   useEffect(() => {
-    // Verifica se acesso já foi liberado anteriormente
-    const acessoSalvo = localStorage.getItem('admin_acesso_liberado')
-    if (acessoSalvo === 'true') {
-      setLiberado(true)
+    if (typeof window !== 'undefined') {
+      const acessoSalvo = localStorage.getItem('admin_acesso_liberado')
+      if (acessoSalvo === 'true') {
+        setLiberado(true)
+      }
     }
   }, [])
 
   const handleAcesso = () => {
     if (acesso === senhaSecreta) {
       setLiberado(true)
-      localStorage.setItem('admin_acesso_liberado', 'true') // Salva no localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('admin_acesso_liberado', 'true')
+      }
       setMensagem('')
     } else {
       setMensagem('Senha incorreta!')

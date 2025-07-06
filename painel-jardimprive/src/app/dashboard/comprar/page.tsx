@@ -31,8 +31,10 @@ interface CarrinhoItem {
 export default function ComprarPage() {
   const [produtos, setProdutos] = useState<Product[]>([]);
   const [quantidades, setQuantidades] = useState<{ [variationId: string]: number }>({});
+  const [isClient, setIsClient] = useState(false); // Garante que o localStorage só seja usado no client
 
   useEffect(() => {
+    setIsClient(true); // Marca que já está no client
     const fetchProdutos = async () => {
       try {
         const res = await api.get('/products');
@@ -62,23 +64,27 @@ export default function ComprarPage() {
       quantity: quantidade,
     };
 
-    const carrinhoAtual: CarrinhoItem[] = JSON.parse(localStorage.getItem('carrinho') || '[]');
-    const indexExistente = carrinhoAtual.findIndex((i) => i.variationId === novoItem.variationId);
+    if (typeof window !== 'undefined') {
+      const carrinhoAtual: CarrinhoItem[] = JSON.parse(localStorage.getItem('carrinho') || '[]');
+      const indexExistente = carrinhoAtual.findIndex((i) => i.variationId === novoItem.variationId);
 
-    if (indexExistente !== -1) {
-      carrinhoAtual[indexExistente] = {
-        ...carrinhoAtual[indexExistente],
-        quantity: carrinhoAtual[indexExistente].quantity + novoItem.quantity,
-      };
-    } else {
-      carrinhoAtual.push(novoItem);
+      if (indexExistente !== -1) {
+        carrinhoAtual[indexExistente] = {
+          ...carrinhoAtual[indexExistente],
+          quantity: carrinhoAtual[indexExistente].quantity + novoItem.quantity,
+        };
+      } else {
+        carrinhoAtual.push(novoItem);
+      }
+
+      localStorage.setItem('carrinho', JSON.stringify(carrinhoAtual));
+      alert('Produto adicionado ao carrinho!');
     }
-
-    localStorage.setItem('carrinho', JSON.stringify(carrinhoAtual));
-    alert('Produto adicionado ao carrinho!');
 
     setQuantidades((prev) => ({ ...prev, [variacaoId]: 1 }));
   };
+
+  if (!isClient) return null; // Garante que o componente só renderize após montagem no client
 
   return (
     <Card>

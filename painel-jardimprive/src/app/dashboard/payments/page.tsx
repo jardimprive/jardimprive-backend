@@ -15,19 +15,19 @@ interface Payment {
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Exemplo: lendo token do localStorage para api (caso precise)
-  // useEffect(() => {
-  //   const token = localStorage.getItem('authToken');
-  //   if (token) {
-  //     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  //   }
-  // }, []);
-
-  const fetchPayments = () => {
-    api.get('/payment/my').then((res) => {
+  // Carregar pagamentos do servidor
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/payment/my');
       setPayments(res.data);
-    });
+    } catch (error) {
+      console.error('Erro ao carregar pagamentos:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -35,8 +35,13 @@ export default function PaymentsPage() {
   }, []);
 
   const handlePay = async (id: string) => {
-    await api.post(`/payment/${id}/pay`);
-    fetchPayments();
+    try {
+      await api.post(`/payment/${id}/pay`);
+      fetchPayments(); // Recarregar os pagamentos após pagamento
+    } catch (error) {
+      console.error('Erro ao processar pagamento:', error);
+      alert('Erro ao processar o pagamento.');
+    }
   };
 
   return (
@@ -46,7 +51,9 @@ export default function PaymentsPage() {
           <CardTitle>Meus Pagamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          {payments.length === 0 ? (
+          {loading ? (
+            <p>Carregando pagamentos...</p>
+          ) : payments.length === 0 ? (
             <p>Você ainda não possui pagamentos.</p>
           ) : (
             <div className="space-y-4">

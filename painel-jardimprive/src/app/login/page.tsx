@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const emailRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    emailRef.current?.focus()
+  }, [])
 
   const handleLogin = async () => {
     setLoading(true)
@@ -20,13 +25,21 @@ export default function LoginPage() {
     try {
       const res = await api.post('/auth/login', { email, password })
       const { token } = res.data
-      localStorage.setItem('token', token)
-      router.push('/dashboard')
-    } catch (err) {
+
+      if (typeof window !== 'undefined' && token) {
+        localStorage.setItem('token', token)
+        router.push('/dashboard')
+      }
+    } catch (err: any) {
+      console.error('Erro ao fazer login:', err)
       setError('Login falhou. Verifique suas credenciais.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleLogin()
   }
 
   const goToRegister = () => {
@@ -44,12 +57,15 @@ export default function LoginPage() {
           <div className="space-y-2">
             <label className="sr-only" htmlFor="email">Email</label>
             <Input
+              ref={emailRef}
               id="email"
               type="email"
               placeholder="E-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
+              onKeyDown={handleKeyPress}
+              autoComplete="username"
             />
 
             <label className="sr-only" htmlFor="password">Senha</label>
@@ -60,6 +76,8 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
+              onKeyDown={handleKeyPress}
+              autoComplete="current-password"
             />
           </div>
 

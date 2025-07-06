@@ -21,26 +21,28 @@ export default function EditarProdutoPage() {
 
   // Carrega dados do produto do backend
   useEffect(() => {
-    const fetchProduto = async () => {
-      try {
-        const res = await api.get(`/products/${id}`);
-        const produto = res.data;
-        setName(produto.name);
-        setDescription(produto.description);
-        setImage(produto.image);
-        setActive(produto.active);
-        setVariations(produto.variations || []);
-      } catch (err) {
-        console.error('Erro ao buscar produto:', err);
-      }
-    };
+    if (typeof window !== 'undefined') {
+      const fetchProduto = async () => {
+        try {
+          const res = await api.get(`/products/${id}`);
+          const produto = res.data;
+          setName(produto.name);
+          setDescription(produto.description);
+          setImage(produto.image);
+          setActive(produto.active);
+          setVariations(produto.variations || []);
+        } catch (err) {
+          console.error('Erro ao buscar produto:', err);
+        }
+      };
 
-    if (id) fetchProduto();
+      if (id) fetchProduto();
+    }
   }, [id]);
 
   // Salva no localStorage sempre que 'name' mudar
   useEffect(() => {
-    if (name) {
+    if (typeof window !== 'undefined' && name) {
       localStorage.setItem('produto_name', name);
     }
   }, [name]);

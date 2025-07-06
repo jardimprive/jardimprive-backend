@@ -59,7 +59,7 @@ export default function DashboardPage() {
         const pendings = Array.isArray(paymentRes.data) ? paymentRes.data : [];
         setPendingPayments(pendings.filter((p: any) => p.status !== 'PAGO').reduce((acc, item) => acc + item.amount, 0));
 
-        const summaryRes = await api.get('/dashboard/summary');
+        const summaryRes = await api.get('/dashboard/summary'); // já corrigido (rota no backend virou /api/dashboard)
         setSummary(summaryRes.data);
 
         const metaRes = await api.get('/bonus/progress');
@@ -72,7 +72,7 @@ export default function DashboardPage() {
       }
     } catch (error: any) {
       console.error('Erro ao buscar dados:', error);
-      if (error.response?.status === 401 || error.response?.status === 403) {
+      if (typeof window !== 'undefined' && (error.response?.status === 401 || error.response?.status === 403)) {
         localStorage.removeItem('token');
         router.push('/login');
       }
@@ -80,6 +80,8 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -168,7 +170,6 @@ export default function DashboardPage() {
 
       {userRole === 'VENDEDORA' && (
         <>
-          {/* Cards principais */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {cards.map((card, index) => (
               <motion.div
@@ -189,7 +190,6 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* Gráficos */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-0 sm:p-4">
               <CardHeader>

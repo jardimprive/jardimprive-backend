@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/format';
-import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
 interface VendedoraInfo {
@@ -24,14 +23,19 @@ interface DashboardData {
 export default function PainelLiderPage() {
   const [dados, setDados] = useState<DashboardData | null>(null);
   const [linkConvite, setLinkConvite] = useState('');
+  const [erro, setErro] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState<boolean>(true);
 
   const carregarDados = async () => {
+    setCarregando(true);
     try {
       const res = await api.get('/leader/dashboard');
       setDados(res.data);
     } catch (err) {
       console.error('Erro ao carregar dados da equipe:', err);
-      alert('Erro ao carregar dados da equipe.');
+      setErro('Erro ao carregar dados da equipe.');
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -55,7 +59,9 @@ export default function PainelLiderPage() {
     alert('Link de convite copiado com sucesso!');
   };
 
-  if (!dados) return <p className="text-sm text-muted-foreground">Carregando painel...</p>;
+  // Verifica se `dados` não é null antes de tentar acessar suas propriedades
+  if (carregando) return <p className="text-sm text-muted-foreground">Carregando painel...</p>;
+  if (erro) return <p className="text-sm text-red-500">{erro}</p>;
 
   return (
     <Card>
@@ -89,28 +95,28 @@ export default function PainelLiderPage() {
           <div className="bg-green-100 p-4 rounded shadow-sm">
             <p className="text-sm text-gray-600">Total de vendas (30 dias)</p>
             <p className="text-xl font-bold text-green-800">
-              {formatCurrency(dados.totalVendas)}
+              {dados?.totalVendas ? formatCurrency(dados.totalVendas) : 'Não disponível'}
             </p>
           </div>
 
           <div className="bg-blue-100 p-4 rounded shadow-sm">
             <p className="text-sm text-gray-600">Nº de vendedoras</p>
             <p className="text-xl font-bold text-blue-800">
-              {dados.totalVendedoras}
+              {dados?.totalVendedoras ?? 'Não disponível'}
             </p>
           </div>
 
           <div className="bg-yellow-100 p-4 rounded shadow-sm">
             <p className="text-sm text-gray-600">Comissão (%)</p>
             <p className="text-xl font-bold text-yellow-800">
-              {dados.percentual}%
+              {dados?.percentual ?? 'Não disponível'}%
             </p>
           </div>
 
           <div className="bg-purple-100 p-4 rounded shadow-sm">
             <p className="text-sm text-gray-600">Comissão estimada</p>
             <p className="text-xl font-bold text-purple-800">
-              {formatCurrency(dados.comissaoEstimativa)}
+              {dados?.comissaoEstimativa ? formatCurrency(dados.comissaoEstimativa) : 'Não disponível'}
             </p>
           </div>
         </div>
@@ -119,7 +125,7 @@ export default function PainelLiderPage() {
         <div>
           <h3 className="text-lg font-semibold mb-2">Vendedoras da sua equipe</h3>
 
-          {dados.minhasVendedoras.length === 0 ? (
+          {dados?.minhasVendedoras?.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhuma vendedora cadastrada ainda.
             </p>
@@ -135,7 +141,7 @@ export default function PainelLiderPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dados.minhasVendedoras.map((v, i) => (
+                  {dados?.minhasVendedoras?.map((v, i) => (
                     <tr key={i} className="border-b hover:bg-gray-50">
                       <td className="py-2 px-4">{v.name}</td>
                       <td className="py-2 px-4">{v.email}</td>

@@ -13,6 +13,8 @@ export default function RelatoriosPage() {
     setLoading(tipo);
 
     try {
+      if (typeof window === 'undefined') throw new Error('Ambiente inválido');
+
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Usuário não autenticado');
 
@@ -23,15 +25,16 @@ export default function RelatoriosPage() {
       });
 
       if (!res.ok) {
-        throw new Error('Erro ao exportar');
+        throw new Error(`Erro ${res.status}: ${res.statusText}`);
       }
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
 
       const link = document.createElement('a');
+      const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       link.href = url;
-      link.download = `${tipo}.csv`;
+      link.download = `${tipo}-${timestamp}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -59,6 +62,7 @@ export default function RelatoriosPage() {
           {error && (
             <div
               role="alert"
+              aria-live="polite"
               className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded border border-red-400"
             >
               {error}
@@ -74,7 +78,8 @@ export default function RelatoriosPage() {
                 aria-label={`Exportar relatório de ${tipo}`}
                 className="w-full"
               >
-                {loading === tipo ? 'Exportando...' : tipo === 'pedidos' ? '📦 Pedidos' :
+                {loading === tipo ? 'Exportando...' :
+                  tipo === 'pedidos' ? '📦 Pedidos' :
                   tipo === 'comissoes' ? '💰 Comissões' :
                   tipo === 'bonus' ? '🎁 Bônus' :
                   tipo === 'saques' ? '🏦 Saques' : tipo}

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 
 interface Pedido {
   id: string;
@@ -35,6 +35,7 @@ export default function PedidoDetalhadoPage() {
   const { id } = useParams();
   const router = useRouter();
   const [pedido, setPedido] = useState<Pedido | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
 
   const fetchPedido = async () => {
     try {
@@ -42,6 +43,7 @@ export default function PedidoDetalhadoPage() {
       setPedido(res.data);
     } catch (err) {
       console.error('Erro ao buscar pedido:', err);
+      setErro('Erro ao carregar o pedido.');
     }
   };
 
@@ -49,6 +51,13 @@ export default function PedidoDetalhadoPage() {
     if (id) fetchPedido();
   }, [id]);
 
+  // Verificação de segurança nas datas
+  const formatarData = (data: string) => {
+    const parsedDate = parseISO(data);
+    return isValid(parsedDate) ? format(parsedDate, 'dd/MM/yyyy') : 'Data inválida';
+  };
+
+  if (erro) return <p className="text-sm text-red-500">{erro}</p>;
   if (!pedido) return <p>Carregando...</p>;
 
   const total = pedido.items.reduce(
@@ -60,9 +69,7 @@ export default function PedidoDetalhadoPage() {
     <Card>
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <CardTitle>📦 Detalhes do Pedido</CardTitle>
-        <Button onClick={() => router.push('/dashboard/meus-pedidos')}>
-          Voltar
-        </Button>
+        <Button onClick={() => router.push('/dashboard/meus-pedidos')}>Voltar</Button>
       </CardHeader>
 
       <CardContent className="space-y-6 text-sm px-2 sm:px-6">
@@ -70,7 +77,7 @@ export default function PedidoDetalhadoPage() {
         <div className="space-y-1">
           <p><strong>ID do Pedido:</strong> {pedido.id}</p>
           <p><strong>Status:</strong> <span className="uppercase">{pedido.status}</span></p>
-          <p><strong>Data:</strong> {format(new Date(pedido.createdAt), 'dd/MM/yyyy')}</p>
+          <p><strong>Data:</strong> {formatarData(pedido.createdAt)}</p>
           {pedido.trackingCode && (
             <p><strong>Código de Rastreio:</strong> {pedido.trackingCode}</p>
           )}
@@ -113,7 +120,7 @@ export default function PedidoDetalhadoPage() {
                     <p><strong>Tipo:</strong> {p.type}</p>
                     <p><strong>Valor:</strong> R$ {p.amount.toFixed(2)}</p>
                     <p><strong>Status:</strong> {p.status}</p>
-                    <p><strong>Vencimento:</strong> {format(new Date(p.dueDate), 'dd/MM/yyyy')}</p>
+                    <p><strong>Vencimento:</strong> {formatarData(p.dueDate)}</p>
                   </li>
                 ))}
               </ul>

@@ -28,20 +28,25 @@ interface Product {
 }
 
 export default function ProdutosPage() {
-  const [produtos, setProdutos] = useState<Product[]>(() => {
+  const [produtos, setProdutos] = useState<Product[]>([]);
+  const router = useRouter();
+
+  // Carrega do localStorage e depois atualiza com dados da API
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('produtos_cache');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) setProdutos(JSON.parse(saved));
     }
-    return [];
-  });
-  const router = useRouter();
+    fetchProdutos();
+  }, []);
 
   const fetchProdutos = async () => {
     try {
       const res = await api.get('/products');
       setProdutos(res.data);
-      localStorage.setItem('produtos_cache', JSON.stringify(res.data));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('produtos_cache', JSON.stringify(res.data));
+      }
     } catch (err) {
       console.error('Erro ao buscar produtos:', err);
     }
@@ -50,7 +55,11 @@ export default function ProdutosPage() {
   const toggleAtivo = async (id: string, ativo: boolean) => {
     try {
       await api.put(`/products/${id}`, { active: !ativo });
-      fetchProdutos();
+      setProdutos((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, active: !ativo } : p
+        )
+      );
     } catch (err) {
       console.error('Erro ao alterar status:', err);
     }
@@ -61,15 +70,11 @@ export default function ProdutosPage() {
 
     try {
       await api.delete(`/products/${id}`);
-      fetchProdutos();
+      setProdutos((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error('Erro ao deletar produto:', err);
     }
   };
-
-  useEffect(() => {
-    fetchProdutos();
-  }, []);
 
   return (
     <Card>
@@ -100,18 +105,28 @@ export default function ProdutosPage() {
                 <tr key={produto.id} className="border-b hover:bg-gray-50">
                   <td className="py-2 px-2 sm:px-4 max-w-xs truncate" title={produto.description}>
                     <strong>{produto.name}</strong>
-                    <p className="text-muted-foreground truncate text-xs sm:text-sm">{produto.description}</p>
+                    <p className="text-muted-foreground truncate text-xs sm:text-sm">
+                      {produto.description}
+                    </p>
                   </td>
                   <td className="py-2 px-2 sm:px-4 text-center">
                     <Switch
                       checked={produto.active}
-                      onCheckedChange={() => toggleAtivo(produto.id, produto.active)}
+                      onCheckedChange={() =>
+                        toggleAtivo(produto.id, produto.active)
+                      }
                       aria-label={`Ativar ou desativar ${produto.name}`}
                     />
                   </td>
                   <td className="py-2 px-2 sm:px-4 space-y-1 max-w-xs">
                     {produto.variations.map((v) => (
-                      <div key={v.id} className="text-xs sm:text-sm truncate" title={`${v.size} • R$ ${v.price.toFixed(2)} • Estoque: ${v.stock}`}>
+                      <div
+                        key={v.id}
+                        className="text-xs sm:text-sm truncate"
+                        title={`${v.size} • R$ ${v.price.toFixed(
+                          2
+                        )} • Estoque: ${v.stock}`}
+                      >
                         {v.size} • R$ {v.price.toFixed(2)} • Estoque: {v.stock}
                       </div>
                     ))}
@@ -121,7 +136,9 @@ export default function ProdutosPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/dashboard/produtos/${produto.id}/editar`)}
+                        onClick={() =>
+                          router.push(`/dashboard/produtos/${produto.id}/editar`)
+                        }
                       >
                         Editar
                       </Button>

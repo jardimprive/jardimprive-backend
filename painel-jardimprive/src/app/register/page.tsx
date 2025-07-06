@@ -1,61 +1,41 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import api from '@/lib/api'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
-// Função para validar CPF básico (formato e dígitos)
+// Validação de CPF
 function validarCPF(cpf: string) {
-  cpf = cpf.replace(/\D/g, '');
+  cpf = cpf.replace(/\D/g, '')
+  if (cpf.length !== 11 || /^(.)\1+$/.test(cpf)) return false
 
-  if (cpf.length !== 11) return false;
+  let soma = 0
+  for (let i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i)
+  let resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  if (resto !== parseInt(cpf[9])) return false
 
-  // Elimina CPFs inválidos conhecidos
-  if (/^(.)\1+$/.test(cpf)) return false;
-
-  let soma = 0;
-  let resto;
-
-  for (let i = 1; i <= 9; i++)
-    soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(9, 10))) return false;
-
-  soma = 0;
-  for (let i = 1; i <= 10; i++)
-    soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-
-  resto = (soma * 10) % 11;
-  if (resto === 10 || resto === 11) resto = 0;
-  if (resto !== parseInt(cpf.substring(10, 11))) return false;
-
-  return true;
+  soma = 0
+  for (let i = 0; i < 10; i++) soma += parseInt(cpf[i]) * (11 - i)
+  resto = (soma * 10) % 11
+  if (resto === 10 || resto === 11) resto = 0
+  return resto === parseInt(cpf[10])
 }
 
-// Função para aplicar máscara de telefone (ex: (99) 99999-9999)
+// Máscara para telefone
 function formatarTelefone(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-
-  if (digits.length <= 10) {
-    // Formato (99) 9999-9999
-    return digits
-      .replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3')
-      .replace(/-$/, '');
-  } else {
-    // Formato (99) 99999-9999 para celular
-    return digits
-      .replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3')
-      .replace(/-$/, '');
-  }
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  return digits.length <= 10
+    ? digits.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3').replace(/-$/, '')
+    : digits.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3').replace(/-$/, '')
 }
 
 export default function CadastroPage() {
-  const router = useRouter();
+  const router = useRouter()
+  const nameRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -64,69 +44,65 @@ export default function CadastroPage() {
     phone: '',
     address: '',
     password: '',
-  });
+  })
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    nameRef.current?.focus()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-
+    const { name, value } = e.target
     if (name === 'phone') {
-      setForm({ ...form, phone: formatarTelefone(value) });
+      setForm({ ...form, phone: formatarTelefone(value) })
     } else if (name === 'cpf') {
-      // opcional: formatar CPF também, ex: 000.000.000-00
       const cpfFormatado = value
         .replace(/\D/g, '')
         .slice(0, 11)
         .replace(/(\d{3})(\d)/, '$1.$2')
         .replace(/(\d{3})(\d)/, '$1.$2')
-        .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-      setForm({ ...form, cpf: cpfFormatado });
+        .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+      setForm({ ...form, cpf: cpfFormatado })
     } else {
-      setForm({ ...form, [name]: value });
+      setForm({ ...form, [name]: value })
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
+    e.preventDefault()
+    setError('')
+    setSuccess('')
 
-    // Validações antes do submit
     if (!validarCPF(form.cpf)) {
-      setError('CPF inválido.');
-      return;
+      setError('CPF inválido.')
+      return
     }
 
-    // Verifica se telefone tem pelo menos 10 dígitos
-    const telDigits = form.phone.replace(/\D/g, '');
+    const telDigits = form.phone.replace(/\D/g, '')
     if (telDigits.length < 10) {
-      setError('Telefone inválido.');
-      return;
+      setError('Telefone inválido.')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      await api.post('/auth/register', {
-        ...form,
-        role: 'VENDEDORA',
-      });
-
-      setSuccess('Cadastro realizado com sucesso! Você será redirecionada para o login...');
-      setTimeout(() => router.push('/login'), 2000);
+      await api.post('/auth/register', { ...form, role: 'VENDEDORA' })
+      setSuccess('Cadastro realizado com sucesso! Redirecionando...')
+      setTimeout(() => router.push('/login'), 2000)
     } catch (err: any) {
-      console.error(err.response?.data);
+      console.error(err)
       setError(
-        err.response?.data?.details ||
-        err.response?.data?.error ||
+        err?.response?.data?.details ||
+        err?.response?.data?.error ||
         'Erro ao cadastrar. Tente novamente.'
-      );
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -140,12 +116,14 @@ export default function CadastroPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
+              ref={nameRef}
               name="name"
               placeholder="Nome completo"
               required
               onChange={handleChange}
               disabled={loading}
               value={form.name}
+              autoComplete="name"
             />
             <Input
               name="email"
@@ -155,6 +133,7 @@ export default function CadastroPage() {
               onChange={handleChange}
               disabled={loading}
               value={form.email}
+              autoComplete="email"
             />
             <Input
               name="cpf"
@@ -163,6 +142,7 @@ export default function CadastroPage() {
               onChange={handleChange}
               disabled={loading}
               value={form.cpf}
+              autoComplete="off"
             />
             <Input
               name="phone"
@@ -171,6 +151,7 @@ export default function CadastroPage() {
               onChange={handleChange}
               disabled={loading}
               value={form.phone}
+              autoComplete="tel"
             />
             <Input
               name="address"
@@ -179,6 +160,7 @@ export default function CadastroPage() {
               onChange={handleChange}
               disabled={loading}
               value={form.address}
+              autoComplete="street-address"
             />
             <Input
               name="password"
@@ -188,6 +170,7 @@ export default function CadastroPage() {
               onChange={handleChange}
               disabled={loading}
               value={form.password}
+              autoComplete="new-password"
             />
 
             <Button type="submit" disabled={loading} className="w-full">
@@ -200,5 +183,5 @@ export default function CadastroPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

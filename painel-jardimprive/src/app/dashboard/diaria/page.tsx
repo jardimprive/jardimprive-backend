@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 
 export default function DiariaPage() {
   const [reserva, setReserva] = useState<string | null>(null);
@@ -45,22 +45,24 @@ export default function DiariaPage() {
     fetchReserva();
   }, []);
 
+  const dataFormatada = reserva && isValid(parseISO(reserva))
+    ? format(parseISO(reserva), 'dd/MM/yyyy')
+    : null;
+
   return (
-    <Card className="p-6 max-w-md mx-auto"> {/* Container centralizado e largura max */}
+    <Card className="p-6 max-w-md mx-auto">
       <CardHeader>
         <CardTitle>🏨 Agendamento de Diária no Hotel</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 text-sm">
         {carregando ? (
           <p>Carregando...</p>
-        ) : reserva ? (
+        ) : reserva && dataFormatada ? (
           <div className="bg-green-50 p-4 rounded border text-green-800">
             <p className="font-medium">
               ✅ Você já agendou sua diária para:
               <br />
-              <strong className="text-lg">
-                {format(new Date(reserva), 'dd/MM/yyyy')}
-              </strong>
+              <strong className="text-lg">{dataFormatada}</strong>
             </p>
             <p className="text-xs text-muted-foreground mt-2">
               Caso deseje alterar, entre em contato com o suporte.

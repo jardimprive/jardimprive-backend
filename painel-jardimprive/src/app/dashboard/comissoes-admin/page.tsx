@@ -24,7 +24,9 @@ export default function ComissoesAdminPage() {
   const fetchComissoes = async () => {
     try {
       const res = await api.get('/commission');
-      setComissoes(res.data);
+      if (res.data) {
+        setComissoes(res.data);
+      }
     } catch (err) {
       console.error('Erro ao buscar comissões:', err);
     }

@@ -46,6 +46,7 @@ export default function PedidosAdminPage() {
   const [paymentFiltro, setPaymentFiltro] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   // Carregar filtros do localStorage no mount
@@ -80,6 +81,7 @@ export default function PedidosAdminPage() {
 
   // Buscar pedidos com filtros atuais
   const fetchPedidos = async () => {
+    setLoading(true);
     try {
       const params: any = {};
 
@@ -92,6 +94,9 @@ export default function PedidosAdminPage() {
       setPedidos(res.data);
     } catch (err) {
       console.error('Erro ao buscar pedidos:', err);
+      alert('Erro ao carregar os pedidos');
+    } finally {
+      setLoading(false);
     }
   };
 

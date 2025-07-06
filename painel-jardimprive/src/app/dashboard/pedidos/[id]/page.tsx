@@ -44,14 +44,7 @@ export default function PedidoDetalhesPage() {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [status, setStatus] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
-
-  // Se precisar usar token do localStorage para autorização na api:
-  // useEffect(() => {
-  //   const token = localStorage.getItem('authToken');
-  //   if (token) {
-  //     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  //   }
-  // }, []);
+  const [loading, setLoading] = useState(true);
 
   const fetchPedido = async () => {
     try {
@@ -61,6 +54,9 @@ export default function PedidoDetalhesPage() {
       setTrackingCode(res.data.trackingCode || '');
     } catch (err) {
       console.error('Erro ao buscar pedido:', err);
+      alert('Erro ao carregar detalhes do pedido.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,6 +66,11 @@ export default function PedidoDetalhesPage() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+
+    if (!status) {
+      alert('⚠️ Selecione um status para o pedido.');
+      return;
+    }
 
     try {
       await api.put(`/orders/${id}`, {
@@ -85,7 +86,8 @@ export default function PedidoDetalhesPage() {
     }
   };
 
-  if (!pedido) return <p>Carregando pedido...</p>;
+  if (loading) return <p>Carregando pedido...</p>;
+  if (!pedido) return <p>Pedido não encontrado.</p>;
 
   const total = pedido.items.reduce(
     (sum, item) => sum + item.price * item.quantity,

@@ -20,7 +20,6 @@ export default function AlterarSenhaPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  // Validação simples e clara da nova senha
   const validatePassword = (password: string) => {
     const errorsList = [];
     if (password.length < 8) errorsList.push('mínimo 8 caracteres');
@@ -35,7 +34,9 @@ export default function AlterarSenhaPage() {
 
     const newErrors: Errors = {};
 
-    if (!currentPassword) newErrors.currentPassword = 'Informe sua senha atual.';
+    if (!currentPassword) {
+      newErrors.currentPassword = 'Informe sua senha atual.';
+    }
 
     const passwordValidation = validatePassword(newPassword);
     if (passwordValidation.length > 0) {
@@ -48,9 +49,7 @@ export default function AlterarSenhaPage() {
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length > 0) {
-      return; // Para se tiver erros
-    }
+    if (Object.keys(newErrors).length > 0) return;
 
     setLoading(true);
     try {
@@ -58,6 +57,7 @@ export default function AlterarSenhaPage() {
         currentPassword,
         newPassword,
       });
+
       alert('Senha atualizada com sucesso!');
       setCurrentPassword('');
       setNewPassword('');
@@ -65,7 +65,9 @@ export default function AlterarSenhaPage() {
       setErrors({});
     } catch (err: any) {
       console.error('Erro ao alterar senha:', err);
-      alert(err.response?.data?.error || 'Erro ao alterar senha');
+      const message = err?.response?.data?.error || 'Erro inesperado ao alterar senha.';
+      alert(message);
+      setCurrentPassword('');
     } finally {
       setLoading(false);
     }
@@ -139,6 +141,8 @@ export default function AlterarSenhaPage() {
             <Button
               type="submit"
               disabled={loading}
+              title="Salvar nova senha"
+              aria-label="Salvar nova senha"
               className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Salvando...' : 'Salvar Nova Senha'}
