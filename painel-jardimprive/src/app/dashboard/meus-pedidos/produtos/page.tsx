@@ -32,6 +32,26 @@ interface ItemCarrinho {
 export default function ProdutosParaPedidoPage() {
   const [produtos, setProdutos] = useState<Product[]>([]);
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
+  const [quantidades, setQuantidades] = useState<{ [variationId: string]: number }>({});
+
+  // Carregar produtos e carrinho do localStorage na inicialização
+  useEffect(() => {
+    fetchProdutos();
+
+    const carrinhoStorage = localStorage.getItem('carrinho');
+    if (carrinhoStorage) {
+      try {
+        setCarrinho(JSON.parse(carrinhoStorage));
+      } catch {
+        setCarrinho([]);
+      }
+    }
+  }, []);
+
+  // Salvar carrinho no localStorage sempre que mudar
+  useEffect(() => {
+    localStorage.setItem('carrinho', JSON.stringify(carrinho));
+  }, [carrinho]);
 
   const fetchProdutos = async () => {
     try {
@@ -43,31 +63,45 @@ export default function ProdutosParaPedidoPage() {
     }
   };
 
-  const adicionarAoCarrinho = (produto: Product, variacaoId: string, quantidade: number) => {
+  const adicionarAoCarrinho = (produto: Product, variacaoId: string) => {
     const variacao = produto.variations.find((v) => v.id === variacaoId);
-    if (!variacao || quantidade <= 0 || quantidade > variacao.stock) return;
+    const qtd = quantidades[variacaoId] || 1;
+
+    if (!variacao || qtd <= 0 || qtd > variacao.stock) {
+      alert('Quantidade inválida.');
+      return;
+    }
 
     const novoItem: ItemCarrinho = {
       variationId: variacao.id,
       name: produto.name,
       size: variacao.size,
       price: variacao.price,
-      quantity: quantidade,
+      quantity: qtd,
     };
 
     setCarrinho((prev) => [...prev, novoItem]);
+    setQuantidades((prev) => ({ ...prev, [variacaoId]: 1 }));
   };
 
   const removerItem = (index: number) => {
     setCarrinho((prev) => prev.filter((_, i) => i !== index));
   };
 
-  useEffect(() => {
-    fetchProdutos();
-  }, []);
+  const total = carrinho.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const finalizarPedido = () => {
+    if (total < 250) {
+      alert('O valor mínimo do pedido é R$250,00.');
+      return;
+    }
+
+    window.location.href = '/dashboard/checkout';
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 max-w-5xl mx-auto">
+      {/* Produtos */}
       <Card>
         <CardHeader>
           <CardTitle>🛍️ Produtos Disponíveis</CardTitle>
@@ -85,26 +119,27 @@ export default function ProdutosParaPedidoPage() {
                       <strong>{v.size}</strong> - R$ {v.price.toFixed(2)}<br />
                       Estoque: {v.stock}
                     </div>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const form = e.target as HTMLFormElement;
-                        const quantidade = parseInt((form.elements.namedItem('quantidade') as HTMLInputElement).value);
-                        adicionarAoCarrinho(produto, v.id, quantidade);
-                        form.reset();
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Label htmlFor="quantidade">Qtd</Label>
+
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                      <Label htmlFor={`qtd-${v.id}`}>Qtd</Label>
                       <Input
                         type="number"
-                        name="quantidade"
+                        id={`qtd-${v.id}`}
                         min={1}
                         max={v.stock}
                         className="w-20"
+                        value={quantidades[v.id] || 1}
+                        onChange={(e) =>
+                          setQuantidades((prev) => ({
+                            ...prev,
+                            [v.id]: parseInt(e.target.value),
+                          }))
+                        }
                       />
-                      <Button type="submit">Adicionar</Button>
-                    </form>
+                      <Button className="mt-2 sm:mt-0" onClick={() => adicionarAoCarrinho(produto, v.id)}>
+                        Adicionar
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -113,7 +148,7 @@ export default function ProdutosParaPedidoPage() {
         </CardContent>
       </Card>
 
-      {/* 🛒 Carrinho */}
+      {/* Carrinho */}
       <Card>
         <CardHeader>
           <CardTitle>🧾 Carrinho</CardTitle>
@@ -125,11 +160,20 @@ export default function ProdutosParaPedidoPage() {
             <>
               <ul className="space-y-2">
                 {carrinho.map((item, index) => (
-                  <li key={index} className="flex justify-between items-center border p-2 rounded">
+                  <li
+                    key={index}
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center border p-2 rounded"
+                  >
                     <div>
-                      {item.name} - {item.size} • {item.quantity} un • R$ {(item.price * item.quantity).toFixed(2)}
+                      {item.name} - {item.size} • {item.quantity} un • R${' '}
+                      {(item.price * item.quantity).toFixed(2)}
                     </div>
-                    <Button variant="destructive" size="sm" onClick={() => removerItem(index)}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="mt-2 sm:mt-0"
+                      onClick={() => removerItem(index)}
+                    >
                       Remover
                     </Button>
                   </li>
@@ -137,15 +181,10 @@ export default function ProdutosParaPedidoPage() {
               </ul>
 
               <div className="text-right font-bold text-lg mt-4">
-                Total: R$ {carrinho.reduce((acc, item) => acc + item.price * item.quantity, 0).toFixed(2)}
+                Total: R$ {total.toFixed(2)}
               </div>
 
-              <Button
-                className="mt-4"
-                onClick={() =>
-                  alert('✅ Aqui depois redirecionamos para a próxima etapa do pedido (endereço e forma de pagamento).')
-                }
-              >
+              <Button className="mt-4 w-full sm:w-auto" onClick={finalizarPedido}>
                 Finalizar Pedido
               </Button>
             </>

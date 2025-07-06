@@ -45,6 +45,14 @@ export default function PedidoDetalhesPage() {
   const [status, setStatus] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
 
+  // Se precisar usar token do localStorage para autorização na api:
+  // useEffect(() => {
+  //   const token = localStorage.getItem('authToken');
+  //   if (token) {
+  //     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  //   }
+  // }, []);
+
   const fetchPedido = async () => {
     try {
       const res = await api.get(`/orders/${id}`);
@@ -86,74 +94,80 @@ export default function PedidoDetalhesPage() {
 
   return (
     <Card>
-  <CardHeader>
-    <CardTitle>🧾 Detalhes do Pedido</CardTitle>
-  </CardHeader>
+      <CardHeader>
+        <CardTitle>🧾 Detalhes do Pedido</CardTitle>
+      </CardHeader>
 
-  <CardContent className="space-y-6">
-    {/* 🔹 Informações gerais do pedido */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <Label>ID do Pedido</Label>
-        <p className="font-mono">{pedido.id}</p>
-      </div>
-      <div>
-        <Label>Data</Label>
-        <p>{format(new Date(pedido.createdAt), 'dd/MM/yyyy')}</p>
-      </div>
-      <div>
-        <Label>Vendedora</Label>
-        <p>{pedido.user.name} ({pedido.user.email})</p>
-      </div>
-      <div>
-        <Label>Total</Label>
-        <p className="font-bold text-lg">R$ {total.toFixed(2)}</p>
-      </div>
-    </div>
+      <CardContent className="space-y-6">
+        {/* 🔹 Informações gerais do pedido */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label>ID do Pedido</Label>
+            <p className="font-mono break-words">{pedido.id}</p>
+          </div>
+          <div>
+            <Label>Data</Label>
+            <p>{format(new Date(pedido.createdAt), 'dd/MM/yyyy')}</p>
+          </div>
+          <div>
+            <Label>Vendedora</Label>
+            <p>{pedido.user.name} ({pedido.user.email})</p>
+          </div>
+          <div>
+            <Label>Total</Label>
+            <p className="font-bold text-lg">R$ {total.toFixed(2)}</p>
+          </div>
+        </div>
 
-    {/* 🔹 Lista de produtos */}
-    <div>
-      <Label className="mb-2 block">Produtos</Label>
-      <ul className="space-y-2">
-        {pedido.items.map((item, index) => (
-          <li key={index} className="border p-2 rounded text-sm">
-            {item.variation.product.name} - {item.variation.size} •{' '}
-            {item.quantity} un • R$ {item.price.toFixed(2)} cada
-          </li>
-        ))}
-      </ul>
-    </div>
+        {/* 🔹 Lista de produtos */}
+        <div>
+          <Label className="mb-2 block">Produtos</Label>
+          <ul className="space-y-2">
+            {pedido.items.map((item, index) => (
+              <li
+                key={index}
+                className="border p-2 rounded text-sm break-words"
+              >
+                {item.variation.product.name} - {item.variation.size} •{' '}
+                {item.quantity} un • R$ {item.price.toFixed(2)} cada
+              </li>
+            ))}
+          </ul>
+        </div>
 
-    {/* 🔹 Formulário de atualização */}
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label>Status do Pedido</Label>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="w-full border rounded p-2"
-          required
-        >
-          <option value="">Selecione o status</option>
-          <option value="EM ANDAMENTO">EM ANDAMENTO</option>
-          <option value="ENVIADO">ENVIADO</option>
-          <option value="ENTREGUE">ENTREGUE</option>
-          <option value="CANCELADO">CANCELADO</option>
-        </select>
-      </div>
+        {/* 🔹 Formulário de atualização */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <Label>Status do Pedido</Label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full border rounded p-3 text-base"
+              required
+            >
+              <option value="">Selecione o status</option>
+              <option value="EM ANDAMENTO">EM ANDAMENTO</option>
+              <option value="ENVIADO">ENVIADO</option>
+              <option value="ENTREGUE">ENTREGUE</option>
+              <option value="CANCELADO">CANCELADO</option>
+            </select>
+          </div>
 
-      <div>
-        <Label>Código de Rastreio</Label>
-        <Input
-          value={trackingCode}
-          onChange={(e) => setTrackingCode(e.target.value)}
-          placeholder="Ex: BR123456789SE"
-        />
-      </div>
+          <div>
+            <Label>Código de Rastreio</Label>
+            <Input
+              value={trackingCode}
+              onChange={(e) => setTrackingCode(e.target.value)}
+              placeholder="Ex: BR123456789SE"
+              className="text-base"
+            />
+          </div>
 
-      <Button type="submit">Salvar Alterações</Button>
-    </form>
-  </CardContent>
-</Card>
+          <Button type="submit" className="w-full py-3 text-lg">
+            Salvar Alterações
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

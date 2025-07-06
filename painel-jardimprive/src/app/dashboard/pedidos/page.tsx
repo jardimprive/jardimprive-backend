@@ -37,6 +37,8 @@ interface Pedido {
   }[];
 }
 
+const STORAGE_KEY = 'pedidosAdminFiltros';
+
 export default function PedidosAdminPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [busca, setBusca] = useState('');
@@ -46,6 +48,37 @@ export default function PedidosAdminPage() {
   const [endDate, setEndDate] = useState('');
   const router = useRouter();
 
+  // Carregar filtros do localStorage no mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const obj = JSON.parse(stored);
+          setBusca(obj.busca || '');
+          setStatusFiltro(obj.statusFiltro || '');
+          setPaymentFiltro(obj.paymentFiltro || '');
+          setStartDate(obj.startDate || '');
+          setEndDate(obj.endDate || '');
+        } catch {
+          // JSON inválido, ignore
+        }
+      }
+    }
+  }, []);
+
+  // Sempre que filtros mudam, salvar no localStorage e buscar dados
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ busca, statusFiltro, paymentFiltro, startDate, endDate })
+      );
+    }
+    fetchPedidos();
+  }, [statusFiltro, paymentFiltro, startDate, endDate]);
+
+  // Buscar pedidos com filtros atuais
   const fetchPedidos = async () => {
     try {
       const params: any = {};
@@ -61,10 +94,6 @@ export default function PedidosAdminPage() {
       console.error('Erro ao buscar pedidos:', err);
     }
   };
-
-  useEffect(() => {
-    fetchPedidos();
-  }, [statusFiltro, paymentFiltro, startDate, endDate]);
 
   const exportarCSV = async () => {
     try {
@@ -85,6 +114,7 @@ export default function PedidosAdminPage() {
     }
   };
 
+  // Filtra pedidos localmente pelo campo busca (nome ou id)
   const pedidosFiltrados = pedidos.filter((p) => {
     const buscaLower = busca.toLowerCase();
     const nomeMatch = p.user.name.toLowerCase().includes(buscaLower);
@@ -94,9 +124,11 @@ export default function PedidosAdminPage() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-col items-center gap-4 md:flex-row md:items-center md:justify-between">
+      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <CardTitle>📦 Pedidos Recebidos</CardTitle>
-        <Button onClick={exportarCSV}>⬇️ Exportar CSV</Button>
+        <Button onClick={exportarCSV} className="w-full md:w-auto" size="sm">
+          ⬇️ Exportar CSV
+        </Button>
       </CardHeader>
 
       <CardContent>
@@ -113,33 +145,37 @@ export default function PedidosAdminPage() {
 
           <div>
             <Label>Status</Label>
-            <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-              <SelectTrigger>
-                <SelectValue>Todos os status</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
-                <SelectItem value="EM ANDAMENTO">EM ANDAMENTO</SelectItem>
-                <SelectItem value="ENVIADO">ENVIADO</SelectItem>
-                <SelectItem value="ENTREGUE">ENTREGUE</SelectItem>
-                <SelectItem value="CANCELADO">CANCELADO</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="w-full">
+              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+                <SelectTrigger>
+                  <SelectValue>Todos os status</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="EM ANDAMENTO">EM ANDAMENTO</SelectItem>
+                  <SelectItem value="ENVIADO">ENVIADO</SelectItem>
+                  <SelectItem value="ENTREGUE">ENTREGUE</SelectItem>
+                  <SelectItem value="CANCELADO">CANCELADO</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
             <Label>Pagamento</Label>
-            <Select value={paymentFiltro} onValueChange={setPaymentFiltro}>
-              <SelectTrigger>
-                <SelectValue>Todas as formas</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
-                <SelectItem value="AVISTA">À vista</SelectItem>
-                <SelectItem value="PARCELADO">Parcelado</SelectItem>
-                <SelectItem value="CARTAO">Cartão</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="w-full">
+              <Select value={paymentFiltro} onValueChange={setPaymentFiltro}>
+                <SelectTrigger>
+                  <SelectValue>Todas as formas</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="AVISTA">À vista</SelectItem>
+                  <SelectItem value="PARCELADO">Parcelado</SelectItem>
+                  <SelectItem value="CARTAO">Cartão</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -164,16 +200,16 @@ export default function PedidosAdminPage() {
 
         {/* 🧾 Tabela */}
         <div className="overflow-auto">
-          <table className="min-w-full mt-4 text-sm text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4">ID</th>
-                <th className="py-2 px-4">Vendedora</th>
-                <th className="py-2 px-4">Status</th>
-                <th className="py-2 px-4">Pagamento</th>
-                <th className="py-2 px-4">Total</th>
-                <th className="py-2 px-4">Data</th>
-                <th className="py-2 px-4">Ação</th>
+          <table className="min-w-[700px] mt-4 text-sm text-left border-collapse border border-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="py-2 px-4 border border-gray-200">ID</th>
+                <th className="py-2 px-4 border border-gray-200">Vendedora</th>
+                <th className="py-2 px-4 border border-gray-200">Status</th>
+                <th className="py-2 px-4 border border-gray-200">Pagamento</th>
+                <th className="py-2 px-4 border border-gray-200">Total</th>
+                <th className="py-2 px-4 border border-gray-200">Data</th>
+                <th className="py-2 px-4 border border-gray-200 min-w-[100px]">Ação</th>
               </tr>
             </thead>
             <tbody>
@@ -184,22 +220,21 @@ export default function PedidosAdminPage() {
                 );
 
                 return (
-                  <tr key={p.id} className="border-b">
-                    <td className="py-2 px-4">{p.id}</td>
-                    <td className="py-2 px-4">{p.user.name}</td>
-                    <td className="py-2 px-4">{p.status}</td>
-                    <td className="py-2 px-4">{p.paymentType}</td>
-                    <td className="py-2 px-4">R$ {total.toFixed(2)}</td>
-                    <td className="py-2 px-4">
+                  <tr key={p.id} className="border-b border-gray-200">
+                    <td className="py-2 px-4 border border-gray-200 break-all">{p.id}</td>
+                    <td className="py-2 px-4 border border-gray-200">{p.user.name}</td>
+                    <td className="py-2 px-4 border border-gray-200">{p.status}</td>
+                    <td className="py-2 px-4 border border-gray-200">{p.paymentType}</td>
+                    <td className="py-2 px-4 border border-gray-200">R$ {total.toFixed(2)}</td>
+                    <td className="py-2 px-4 border border-gray-200">
                       {format(new Date(p.createdAt), 'dd/MM/yyyy')}
                     </td>
-                    <td className="py-2 px-4">
+                    <td className="py-2 px-4 border border-gray-200 text-center">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          router.push(`/dashboard/pedidos/${p.id}`)
-                        }
+                        onClick={() => router.push(`/dashboard/pedidos/${p.id}`)}
+                        className="whitespace-nowrap"
                       >
                         👁 Ver Detalhes
                       </Button>

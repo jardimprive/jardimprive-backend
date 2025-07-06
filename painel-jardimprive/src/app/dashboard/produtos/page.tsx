@@ -28,13 +28,20 @@ interface Product {
 }
 
 export default function ProdutosPage() {
-  const [produtos, setProdutos] = useState<Product[]>([]);
+  const [produtos, setProdutos] = useState<Product[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('produtos_cache');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
   const router = useRouter();
 
   const fetchProdutos = async () => {
     try {
       const res = await api.get('/products');
       setProdutos(res.data);
+      localStorage.setItem('produtos_cache', JSON.stringify(res.data));
     } catch (err) {
       console.error('Erro ao buscar produtos:', err);
     }
@@ -66,54 +73,55 @@ export default function ProdutosPage() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <CardTitle>📦 Gerenciar Produtos</CardTitle>
+      <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-4 sm:px-6 md:px-8">
+        <CardTitle className="text-lg sm:text-xl">📦 Gerenciar Produtos</CardTitle>
 
-        {/* ✅ Botão para adicionar novo produto */}
-        <Button onClick={() => router.push('/dashboard/produtos/novo')}>
+        <Button
+          onClick={() => router.push('/dashboard/produtos/novo')}
+          className="w-full sm:w-auto"
+        >
           ➕ Novo Produto
         </Button>
       </CardHeader>
 
-      <CardContent>
-        <div className="overflow-auto">
-          <table className="min-w-full mt-4 text-sm text-left">
+      <CardContent className="px-2 sm:px-4 md:px-6">
+        <div className="overflow-x-auto">
+          <table className="min-w-full mt-4 text-sm text-left border-collapse">
             <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4">Produto</th>
-                <th className="py-2 px-4">Ativo</th>
-                <th className="py-2 px-4">Variações</th>
-                <th className="py-2 px-4">Ações</th>
+              <tr className="border-b bg-gray-50">
+                <th className="py-2 px-2 sm:px-4 whitespace-nowrap">Produto</th>
+                <th className="py-2 px-2 sm:px-4 whitespace-nowrap text-center">Ativo</th>
+                <th className="py-2 px-2 sm:px-4 whitespace-nowrap">Variações</th>
+                <th className="py-2 px-2 sm:px-4 whitespace-nowrap">Ações</th>
               </tr>
             </thead>
             <tbody>
               {produtos.map((produto) => (
-                <tr key={produto.id} className="border-b">
-                  <td className="py-2 px-4">
+                <tr key={produto.id} className="border-b hover:bg-gray-50">
+                  <td className="py-2 px-2 sm:px-4 max-w-xs truncate" title={produto.description}>
                     <strong>{produto.name}</strong>
-                    <p className="text-muted-foreground">{produto.description}</p>
+                    <p className="text-muted-foreground truncate text-xs sm:text-sm">{produto.description}</p>
                   </td>
-                  <td className="py-2 px-4">
+                  <td className="py-2 px-2 sm:px-4 text-center">
                     <Switch
                       checked={produto.active}
                       onCheckedChange={() => toggleAtivo(produto.id, produto.active)}
+                      aria-label={`Ativar ou desativar ${produto.name}`}
                     />
                   </td>
-                  <td className="py-2 px-4">
+                  <td className="py-2 px-2 sm:px-4 space-y-1 max-w-xs">
                     {produto.variations.map((v) => (
-                      <div key={v.id}>
-                        <p className="text-xs">
-                          {v.size} • R$ {v.price.toFixed(2)} • Estoque: {v.stock}
-                        </p>
+                      <div key={v.id} className="text-xs sm:text-sm truncate" title={`${v.size} • R$ ${v.price.toFixed(2)} • Estoque: ${v.stock}`}>
+                        {v.size} • R$ {v.price.toFixed(2)} • Estoque: {v.stock}
                       </div>
                     ))}
                   </td>
-                  <td className="py-2 px-4">
-                    <div className="flex gap-2">
+                  <td className="py-2 px-2 sm:px-4">
+                    <div className="flex flex-wrap gap-2 justify-start sm:justify-start">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/dashboard/produtos/${produto.id}/editar`)} // ✅ Atualizado
+                        onClick={() => router.push(`/dashboard/produtos/${produto.id}/editar`)}
                       >
                         Editar
                       </Button>
@@ -128,6 +136,14 @@ export default function ProdutosPage() {
                   </td>
                 </tr>
               ))}
+
+              {produtos.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-4 text-center text-muted-foreground">
+                    Nenhum produto encontrado.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -63,16 +63,21 @@ export default function ComprarPage() {
     };
 
     const carrinhoAtual: CarrinhoItem[] = JSON.parse(localStorage.getItem('carrinho') || '[]');
+    const indexExistente = carrinhoAtual.findIndex((i) => i.variationId === novoItem.variationId);
 
-    const existente = carrinhoAtual.find((i) => i.variationId === novoItem.variationId);
-    if (existente) {
-      existente.quantity += novoItem.quantity;
+    if (indexExistente !== -1) {
+      carrinhoAtual[indexExistente] = {
+        ...carrinhoAtual[indexExistente],
+        quantity: carrinhoAtual[indexExistente].quantity + novoItem.quantity,
+      };
     } else {
       carrinhoAtual.push(novoItem);
     }
 
     localStorage.setItem('carrinho', JSON.stringify(carrinhoAtual));
     alert('Produto adicionado ao carrinho!');
+
+    setQuantidades((prev) => ({ ...prev, [variacaoId]: 1 }));
   };
 
   return (
@@ -80,44 +85,48 @@ export default function ComprarPage() {
       <CardHeader>
         <CardTitle>🛍️ Comprar Produtos</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {produtos.map((produto) => (
-          <div key={produto.id} className="border p-4 rounded">
-            <h2 className="font-bold text-lg">{produto.name}</h2>
-            <p className="text-sm text-muted-foreground mb-2">{produto.description}</p>
 
-            {produto.variations.map((v) => (
-              <div
-                key={v.id}
-                className="flex flex-col md:flex-row md:items-center justify-between text-sm border-t pt-2 mt-2 gap-2"
-              >
-                <p>
-                  {v.size} • R$ {v.price.toFixed(2)} • Estoque: {v.stock}
-                </p>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={v.stock}
-                    className="w-20"
-                    value={quantidades[v.id] || 1}
-                    onChange={(e) =>
-                      setQuantidades((prev) => ({
-                        ...prev,
-                        [v.id]: parseInt(e.target.value),
-                      }))
-                    }
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => adicionarAoCarrinho(produto, v.id)}
-                    disabled={v.stock === 0}
-                  >
-                    {v.stock === 0 ? 'Esgotado' : 'Comprar'}
-                  </Button>
+      <CardContent className="space-y-6">
+        {produtos.map((produto) => (
+          <div key={produto.id} className="border p-4 rounded-xl shadow-sm bg-white space-y-3">
+            <h2 className="font-bold text-lg">{produto.name}</h2>
+            <p className="text-sm text-muted-foreground">{produto.description}</p>
+
+            <div className="space-y-3">
+              {produto.variations.map((v) => (
+                <div
+                  key={v.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t pt-2 mt-2 gap-2"
+                >
+                  <p>
+                    <strong>{v.size}</strong> • R$ {v.price.toFixed(2)} • Estoque: {v.stock}
+                  </p>
+
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={v.stock}
+                      className="w-20"
+                      value={quantidades[v.id] || 1}
+                      onChange={(e) => {
+                        let val = parseInt(e.target.value);
+                        if (isNaN(val) || val < 1) val = 1;
+                        else if (val > v.stock) val = v.stock;
+                        setQuantidades((prev) => ({ ...prev, [v.id]: val }));
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => adicionarAoCarrinho(produto, v.id)}
+                      disabled={v.stock === 0}
+                    >
+                      {v.stock === 0 ? 'Esgotado' : 'Adicionar'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ))}
       </CardContent>

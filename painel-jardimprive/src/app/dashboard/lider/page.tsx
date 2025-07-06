@@ -35,9 +35,9 @@ export default function PainelLiderPage() {
     }
   };
 
-  // Gerar link de convite com ID da líder
   useEffect(() => {
-    const token = Cookies.get('token');
+    // Troca Cookies.get por localStorage.getItem
+    const token = localStorage.getItem('token');
     if (token) {
       const decoded: any = jwtDecode(token);
       const leaderId = decoded?.id;
@@ -55,7 +55,7 @@ export default function PainelLiderPage() {
     alert('Link de convite copiado com sucesso!');
   };
 
-  if (!dados) return <p>Carregando painel...</p>;
+  if (!dados) return <p className="text-sm text-muted-foreground">Carregando painel...</p>;
 
   return (
     <Card>
@@ -69,7 +69,7 @@ export default function PainelLiderPage() {
           <p className="text-sm text-gray-700 mb-2">
             Compartilhe este link para cadastrar novas vendedoras na sua equipe:
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               readOnly
               className="border rounded px-2 py-1 w-full text-sm"
@@ -84,30 +84,30 @@ export default function PainelLiderPage() {
           </div>
         </div>
 
-        {/* Métricas principais */}
+        {/* 📈 Métricas principais */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-green-100 p-4 rounded shadow">
-            <p className="text-sm text-gray-600">Total de vendas (últimos 30 dias)</p>
+          <div className="bg-green-100 p-4 rounded shadow-sm">
+            <p className="text-sm text-gray-600">Total de vendas (30 dias)</p>
             <p className="text-xl font-bold text-green-800">
               {formatCurrency(dados.totalVendas)}
             </p>
           </div>
 
-          <div className="bg-blue-100 p-4 rounded shadow">
-            <p className="text-sm text-gray-600">Nº de vendedoras na equipe</p>
+          <div className="bg-blue-100 p-4 rounded shadow-sm">
+            <p className="text-sm text-gray-600">Nº de vendedoras</p>
             <p className="text-xl font-bold text-blue-800">
               {dados.totalVendedoras}
             </p>
           </div>
 
-          <div className="bg-yellow-100 p-4 rounded shadow">
+          <div className="bg-yellow-100 p-4 rounded shadow-sm">
             <p className="text-sm text-gray-600">Comissão (%)</p>
             <p className="text-xl font-bold text-yellow-800">
               {dados.percentual}%
             </p>
           </div>
 
-          <div className="bg-purple-100 p-4 rounded shadow">
+          <div className="bg-purple-100 p-4 rounded shadow-sm">
             <p className="text-sm text-gray-600">Comissão estimada</p>
             <p className="text-xl font-bold text-purple-800">
               {formatCurrency(dados.comissaoEstimativa)}
@@ -115,8 +115,8 @@ export default function PainelLiderPage() {
           </div>
         </div>
 
-        {/* Lista de vendedoras */}
-        <div className="mt-6">
+        {/* 🧍‍♀️ Lista de vendedoras */}
+        <div>
           <h3 className="text-lg font-semibold mb-2">Vendedoras da sua equipe</h3>
 
           {dados.minhasVendedoras.length === 0 ? (
@@ -124,26 +124,27 @@ export default function PainelLiderPage() {
               Nenhuma vendedora cadastrada ainda.
             </p>
           ) : (
-            <table className="min-w-full text-sm mt-2">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-4 text-left">Nome</th>
-                  <th className="py-2 px-4 text-left">E-mail</th>
-                  <th className="py-2 px-4 text-left">Total Vendido</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dados.minhasVendedoras.map((vendedora, idx) => (
-                  <tr key={idx} className="border-b">
-                    <td className="py-2 px-4">{vendedora.name}</td>
-                    <td className="py-2 px-4">{vendedora.email}</td>
-                    <td className="py-2 px-4">
-                      {formatCurrency(vendedora.totalVendido)}
-                    </td>
+            // Adicionado overflow-x-auto para responsividade na tabela
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm mt-2 border rounded">
+                <thead className="bg-gray-50">
+                  <tr className="border-b">
+                    <th className="py-2 px-4 text-left">Nome</th>
+                    <th className="py-2 px-4 text-left">E-mail</th>
+                    <th className="py-2 px-4 text-left">Total Vendido</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {dados.minhasVendedoras.map((v, i) => (
+                    <tr key={i} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-4">{v.name}</td>
+                      <td className="py-2 px-4">{v.email}</td>
+                      <td className="py-2 px-4">{formatCurrency(v.totalVendido)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </CardContent>

@@ -5,89 +5,116 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
 
-export default function WithdrawalsPage() {
-  const [withdrawals, setWithdrawals] = useState([]);
-  const [commission, setCommission] = useState(0);
+interface Withdrawal {
+  id: string;
+  amount: number;
+  status: 'PENDENTE' | 'APROVADO' | 'RECUSADO';
+  createdAt: string;
+}
 
-  const fetchData = () => {
-    api.get('/commission/my').then((res) => {
-      const pending = res.data.filter((item: any) => item.status === 'PENDENTE');
+export default function WithdrawalsPage() {
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [commission, setCommission] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [commRes, withdrawRes] = await Promise.all([
+        api.get('/commission/my'),
+        api.get('/withdrawal/my'),
+      ]);
+
+      const pending = commRes.data.filter((item: any) => item.status === 'PENDENTE');
       const total = pending.reduce((acc: number, item: any) => acc + item.amount, 0);
       setCommission(total);
-    });
+      setWithdrawals(withdrawRes.data);
+    } catch (err) {
+      console.error('Erro ao buscar dados de saque:', err);
+      alert('Erro ao carregar informações. Tente novamente mais tarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    api.get('/withdrawal/my').then((res) => {
-      setWithdrawals(res.data);
-    });
+  const handleWithdraw = async () => {
+    setRequesting(true);
+    try {
+      await api.post('/withdrawal/request');
+      await fetchData();
+    } catch (err) {
+      console.error('Erro ao solicitar saque:', err);
+      alert('Erro ao solicitar saque.');
+    } finally {
+      setRequesting(false);
+    }
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const handleWithdraw = async () => {
-    await api.post('/withdrawal/request');
-    fetchData();
-  };
-
   return (
-    <div className="space-y-4">
+    <div className="px-2 sm:px-4 md:px-6 max-w-3xl mx-auto space-y-6">
+      {/* Card de Saldo */}
       <Card>
         <CardHeader>
-          <CardTitle>Saldo Disponível</CardTitle>
+          <CardTitle>💰 Saldo Disponível</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between items-center">
-            <p className="text-2xl font-bold">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <p className="text-3xl font-bold text-green-600">
               R$ {commission.toFixed(2)}
             </p>
             <Button
               onClick={handleWithdraw}
-              disabled={commission < 1}
+              disabled={commission < 1 || requesting}
+              className="w-full sm:w-auto"
             >
-              Solicitar Saque
+              {requesting ? 'Solicitando...' : 'Solicitar Saque'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
+      {/* Card de Lista de Saques */}
       <Card>
         <CardHeader>
-          <CardTitle>Meus Saques</CardTitle>
+          <CardTitle>📋 Meus Saques</CardTitle>
         </CardHeader>
         <CardContent>
-          {withdrawals.length === 0 ? (
-            <p>Você ainda não possui saques.</p>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">🔄 Carregando saques...</p>
+          ) : withdrawals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Você ainda não possui saques.</p>
           ) : (
-            <div className="space-y-2">
-              {withdrawals.map((item: any) => (
+            <div className="space-y-3">
+              {withdrawals.map((item) => (
                 <div
                   key={item.id}
-                  className="flex justify-between items-center border rounded-lg p-2"
+                  className="border rounded-md p-3 bg-white shadow-sm"
                 >
-                  <div>
-                    <p className="font-semibold">
-                      Valor: R$ {item.amount.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Data:{' '}
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Status:{' '}
-                      <span
-                        className={`${
-                          item.status === 'APROVADO'
-                            ? 'text-green-600'
-                            : item.status === 'RECUSADO'
-                            ? 'text-red-600'
-                            : 'text-yellow-600'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </p>
-                  </div>
+                  <p className="font-semibold">
+                    Valor: <span className="text-green-700">R$ {item.amount.toFixed(2)}</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Data: {new Date(item.createdAt).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm">
+                    Status:{' '}
+                    <span
+                      className={`font-medium ${
+                        item.status === 'APROVADO'
+                          ? 'text-green-600'
+                          : item.status === 'RECUSADO'
+                          ? 'text-red-600'
+                          : 'text-yellow-600'
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </p>
                 </div>
               ))}
             </div>

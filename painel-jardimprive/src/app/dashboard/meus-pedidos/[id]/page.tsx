@@ -65,47 +65,59 @@ export default function PedidoDetalhadoPage() {
         </Button>
       </CardHeader>
 
-      <CardContent className="space-y-4 text-sm">
-        <p><strong>ID do Pedido:</strong> {pedido.id}</p>
-        <p><strong>Status:</strong> {pedido.status}</p>
-        <p><strong>Data:</strong> {format(new Date(pedido.createdAt), 'dd/MM/yyyy')}</p>
-        {pedido.trackingCode && (
-          <p><strong>Código de Rastreio:</strong> {pedido.trackingCode}</p>
-        )}
+      <CardContent className="space-y-6 text-sm px-2 sm:px-6">
+        {/* 🔎 Informações principais */}
+        <div className="space-y-1">
+          <p><strong>ID do Pedido:</strong> {pedido.id}</p>
+          <p><strong>Status:</strong> <span className="uppercase">{pedido.status}</span></p>
+          <p><strong>Data:</strong> {format(new Date(pedido.createdAt), 'dd/MM/yyyy')}</p>
+          {pedido.trackingCode && (
+            <p><strong>Código de Rastreio:</strong> {pedido.trackingCode}</p>
+          )}
+        </div>
 
         <hr />
 
-        <h3 className="font-semibold">Itens do Pedido:</h3>
-        <ul className="space-y-2">
-          {pedido.items.map((item, idx) => (
-            <li key={idx} className="border rounded p-2">
-              <p><strong>Produto:</strong> {item.variation.product.name}</p>
-              <p><strong>Tamanho:</strong> {item.variation.size}</p>
-              <p><strong>Preço unitário:</strong> R$ {item.price.toFixed(2)}</p>
-              <p><strong>Quantidade:</strong> {item.quantity}</p>
-              <p><strong>Total:</strong> R$ {(item.price * item.quantity).toFixed(2)}</p>
-            </li>
-          ))}
-        </ul>
+        {/* 📦 Itens do pedido */}
+        <div>
+          <h3 className="font-semibold mb-2">Itens do Pedido:</h3>
+          <ul className="space-y-2">
+            {pedido.items.map((item, idx) => (
+              <li key={idx} className="border rounded p-3 bg-white shadow-sm">
+                <p><strong>Produto:</strong> {item.variation.product.name}</p>
+                <p><strong>Tamanho:</strong> {item.variation.size}</p>
+                <p><strong>Preço unitário:</strong> R$ {item.price.toFixed(2)}</p>
+                <p><strong>Quantidade:</strong> {item.quantity}</p>
+                <p><strong>Total:</strong> R$ {(item.price * item.quantity).toFixed(2)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <hr />
 
-        <p className="text-right text-lg font-bold">Total do Pedido: R$ {total.toFixed(2)}</p>
+        {/* 💰 Total geral */}
+        <div className="text-right text-lg font-bold">
+          Total do Pedido: R$ {total.toFixed(2)}
+        </div>
 
+        {/* 💳 Pagamentos */}
         {pedido.payments && pedido.payments.length > 0 && (
           <>
             <hr />
-            <h3 className="font-semibold">Pagamentos:</h3>
-            <ul className="space-y-2">
-              {pedido.payments.map((p) => (
-                <li key={p.id} className="border rounded p-2 bg-zinc-50">
-                  <p><strong>Tipo:</strong> {p.type}</p>
-                  <p><strong>Valor:</strong> R$ {p.amount.toFixed(2)}</p>
-                  <p><strong>Status:</strong> {p.status}</p>
-                  <p><strong>Vencimento:</strong> {format(new Date(p.dueDate), 'dd/MM/yyyy')}</p>
-                </li>
-              ))}
-            </ul>
+            <div>
+              <h3 className="font-semibold mb-2">Pagamentos:</h3>
+              <ul className="space-y-2">
+                {pedido.payments.map((p) => (
+                  <li key={p.id} className="border rounded p-3 bg-zinc-50">
+                    <p><strong>Tipo:</strong> {p.type}</p>
+                    <p><strong>Valor:</strong> R$ {p.amount.toFixed(2)}</p>
+                    <p><strong>Status:</strong> {p.status}</p>
+                    <p><strong>Vencimento:</strong> {format(new Date(p.dueDate), 'dd/MM/yyyy')}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </>
         )}
       </CardContent>

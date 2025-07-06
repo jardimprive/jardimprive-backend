@@ -13,15 +13,14 @@ export default function DiariaPage() {
   const [dataSelecionada, setDataSelecionada] = useState('');
   const [carregando, setCarregando] = useState(true);
 
-  // ✅ Verifica se já tem diária agendada
   const fetchReserva = async () => {
     try {
       setCarregando(true);
       const res = await api.get('/hotel/minha-diaria');
-      setReserva(res.data.date); // retorna string ISO
+      setReserva(res.data.date);
     } catch (err: any) {
       if (err.response?.status === 404) {
-        setReserva(null); // nenhuma diária ainda
+        setReserva(null);
       } else {
         alert('Erro ao buscar sua diária.');
       }
@@ -36,7 +35,7 @@ export default function DiariaPage() {
     try {
       await api.post('/hotel/agendar', { date: dataSelecionada });
       alert('Diária agendada com sucesso!');
-      fetchReserva(); // atualiza interface
+      fetchReserva();
     } catch (err) {
       alert('Erro ao agendar sua diária.');
     }
@@ -47,37 +46,45 @@ export default function DiariaPage() {
   }, []);
 
   return (
-    <Card>
+    <Card className="p-6 max-w-md mx-auto"> {/* Container centralizado e largura max */}
       <CardHeader>
         <CardTitle>🏨 Agendamento de Diária no Hotel</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm">
+      <CardContent className="space-y-6 text-sm">
         {carregando ? (
           <p>Carregando...</p>
         ) : reserva ? (
-          <div>
-            <p>
-              ✅ Você já agendou sua diária para o dia:{' '}
-              <strong>{format(new Date(reserva), 'dd/MM/yyyy')}</strong>
+          <div className="bg-green-50 p-4 rounded border text-green-800">
+            <p className="font-medium">
+              ✅ Você já agendou sua diária para:
+              <br />
+              <strong className="text-lg">
+                {format(new Date(reserva), 'dd/MM/yyyy')}
+              </strong>
             </p>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               Caso deseje alterar, entre em contato com o suporte.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            <p>
-              Parabéns! Você atingiu a meta e tem direito a 1 diária com tudo incluído em um hotel 5 estrelas.
+            <p className="text-sm">
+              🎉 Parabéns! Você atingiu a meta e tem direito a 1 diária com tudo incluído em um hotel 5 estrelas.
             </p>
-            <div>
-              <Label>Escolha a data da sua diária</Label>
+
+            <div className="space-y-2">
+              <Label>Escolha a data da sua diária:</Label>
               <Input
                 type="date"
+                className="w-full"
                 value={dataSelecionada}
                 onChange={(e) => setDataSelecionada(e.target.value)}
               />
             </div>
-            <Button onClick={agendarDiaria}>Agendar Diária</Button>
+
+            <Button onClick={agendarDiaria} className="w-full sm:w-auto">
+              Agendar Diária
+            </Button>
           </div>
         )}
       </CardContent>

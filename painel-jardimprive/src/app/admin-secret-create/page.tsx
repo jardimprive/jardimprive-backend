@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,11 +10,20 @@ export default function AdminSecretCreatePage() {
   const [liberado, setLiberado] = useState(false)
   const [mensagem, setMensagem] = useState('')
 
-  const senhaSecreta = '21324658Br*1' // 🧠 Só você sabe
+  const senhaSecreta = '21324658Br*1' // ⚠️ Senha visível no front-end: cuidado!
+
+  useEffect(() => {
+    // Verifica se acesso já foi liberado anteriormente
+    const acessoSalvo = localStorage.getItem('admin_acesso_liberado')
+    if (acessoSalvo === 'true') {
+      setLiberado(true)
+    }
+  }, [])
 
   const handleAcesso = () => {
     if (acesso === senhaSecreta) {
       setLiberado(true)
+      localStorage.setItem('admin_acesso_liberado', 'true') // Salva no localStorage
       setMensagem('')
     } else {
       setMensagem('Senha incorreta!')
@@ -41,26 +50,28 @@ export default function AdminSecretCreatePage() {
   }
 
   return (
-    <div className="max-w-md mx-auto py-10">
+    <div className="w-full px-4 sm:px-6 max-w-md mx-auto py-10 space-y-4 overflow-x-hidden">
       {!liberado ? (
         <>
-          <h1 className="text-xl font-bold mb-4">Acesso restrito</h1>
+          <h1 className="text-xl font-bold">Acesso restrito</h1>
           <Input
             type="password"
             placeholder="Digite a senha secreta"
             value={acesso}
             onChange={(e) => setAcesso(e.target.value)}
           />
-          <Button className="mt-2" onClick={handleAcesso}>
+          <Button className="mt-2 w-full sm:w-auto" onClick={handleAcesso}>
             Entrar
           </Button>
-          {mensagem && <p className="mt-2 text-red-600">{mensagem}</p>}
+          {mensagem && <p className="text-red-600">{mensagem}</p>}
         </>
       ) : (
         <>
-          <h1 className="text-xl font-bold mb-4">Criar conta de ADMIN</h1>
-          <Button onClick={criarAdmin}>Criar Admin</Button>
-          {mensagem && <p className="mt-4 text-green-600">{mensagem}</p>}
+          <h1 className="text-xl font-bold">Criar conta de ADMIN</h1>
+          <Button className="w-full sm:w-auto" onClick={criarAdmin}>
+            Criar Admin
+          </Button>
+          {mensagem && <p className="text-green-600">{mensagem}</p>}
         </>
       )}
     </div>

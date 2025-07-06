@@ -2,19 +2,19 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export default function RelatoriosPage() {
-  const [loading, setLoading] = useState('');
+  const [loading, setLoading] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
-  const exportar = async (tipo: string) => {
+  const exportar = useCallback(async (tipo: string) => {
+    setError(null);
+    setLoading(tipo);
+
     try {
-      setLoading(tipo);
-
-      const token = document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('token='))
-        ?.split('=')[1];
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Usuário não autenticado');
 
       const res = await fetch(`/api/export/${tipo}`, {
         headers: {
@@ -35,55 +35,54 @@ export default function RelatoriosPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Erro ao exportar arquivo.');
       console.error(err);
+      setError('Erro ao exportar arquivo. Tente novamente.');
     } finally {
       setLoading('');
     }
-  };
+  }, []);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>📤 Exportar Relatórios</CardTitle>
-      </CardHeader>
+    <div className="px-2 sm:px-4 md:px-6">
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle>📤 Exportar Relatórios</CardTitle>
+        </CardHeader>
 
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Clique para exportar os dados em formato CSV.
-        </p>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Clique para exportar os dados em formato CSV.
+          </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <Button
-            onClick={() => exportar('pedidos')}
-            disabled={loading === 'pedidos'}
-          >
-            {loading === 'pedidos' ? 'Exportando...' : '📦 Pedidos'}
-          </Button>
+          {error && (
+            <div
+              role="alert"
+              className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded border border-red-400"
+            >
+              {error}
+            </div>
+          )}
 
-          <Button
-            onClick={() => exportar('comissoes')}
-            disabled={loading === 'comissoes'}
-          >
-            {loading === 'comissoes' ? 'Exportando...' : '💰 Comissões'}
-          </Button>
-
-          <Button
-            onClick={() => exportar('bonus')}
-            disabled={loading === 'bonus'}
-          >
-            {loading === 'bonus' ? 'Exportando...' : '🎁 Bônus'}
-          </Button>
-
-          <Button
-            onClick={() => exportar('saques')}
-            disabled={loading === 'saques'}
-          >
-            {loading === 'saques' ? 'Exportando...' : '🏦 Saques'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {['pedidos', 'comissoes', 'bonus', 'saques'].map((tipo) => (
+              <Button
+                key={tipo}
+                onClick={() => exportar(tipo)}
+                disabled={loading === tipo}
+                aria-label={`Exportar relatório de ${tipo}`}
+                className="w-full"
+              >
+                {loading === tipo ? 'Exportando...' : tipo === 'pedidos' ? '📦 Pedidos' :
+                  tipo === 'comissoes' ? '💰 Comissões' :
+                  tipo === 'bonus' ? '🎁 Bônus' :
+                  tipo === 'saques' ? '🏦 Saques' : tipo}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

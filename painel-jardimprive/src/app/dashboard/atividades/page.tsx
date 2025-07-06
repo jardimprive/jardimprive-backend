@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import {
   Card,
@@ -29,13 +30,26 @@ interface Atividade {
 export default function AtividadesPage() {
   const [atividades, setAtividades] = useState<Atividade[]>([]);
   const [filtro, setFiltro] = useState('');
+  const router = useRouter();
 
   const fetchAtividades = async () => {
     try {
-      const res = await api.get('/dashboard/atividade');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const res = await api.get('/dashboard/atividade', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       setAtividades(res.data);
     } catch (err) {
       console.error('Erro ao buscar atividades:', err);
+      router.push('/login');
     }
   };
 
@@ -48,10 +62,10 @@ export default function AtividadesPage() {
   );
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="mx-4 sm:mx-6 max-w-4xl">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <CardTitle>🧾 Histórico de Atividades</CardTitle>
-        <div className="mt-4 w-64">
+        <div className="w-full sm:w-64">
           <Select value={filtro} onValueChange={setFiltro}>
             <SelectTrigger>
               <SelectValue>Filtrar por tipo</SelectValue>

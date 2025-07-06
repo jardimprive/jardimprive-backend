@@ -67,6 +67,24 @@ export default function MeusPedidosPage() {
     return (matchId || matchProduto) && statusMatch;
   });
 
+  const statusClass = (status: string) => {
+    switch (status) {
+      case 'AGUARDANDO_APROVACAO':
+        return 'text-yellow-600 font-semibold';
+      case 'APROVADO':
+        return 'text-green-600 font-semibold';
+      case 'ENVIADO':
+      case 'EM_TRANSITO':
+        return 'text-blue-600 font-semibold';
+      case 'ENTREGUE':
+        return 'text-purple-600 font-semibold';
+      case 'CANCELADO':
+        return 'text-red-600 font-semibold';
+      default:
+        return '';
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -74,18 +92,21 @@ export default function MeusPedidosPage() {
       </CardHeader>
       <CardContent>
         {/* 🔍 Filtros */}
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          <div className="flex-1 min-w-0">
             <Input
               placeholder="Buscar por ID ou produto..."
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
+              className="w-full"
             />
           </div>
-          <div className="w-full md:w-64">
+          <div className="w-full sm:w-64 min-w-[150px]">
             <Select value={statusFiltro} onValueChange={setStatusFiltro}>
               <SelectTrigger>
-                <SelectValue>Filtrar por status</SelectValue>
+                <SelectValue>
+                  {statusFiltro === '' ? 'Filtrar por status' : statusFiltro}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Todos</SelectItem>
@@ -119,19 +140,22 @@ export default function MeusPedidosPage() {
                   key={p.id}
                   className="border p-4 rounded-md shadow-sm text-sm bg-white"
                 >
-                  <div className="flex justify-between mb-2">
-                    <p className="font-semibold">Pedido: {p.id}</p>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 gap-2">
+                    <p className="font-semibold break-all">Pedido: {p.id}</p>
                     <p>{format(new Date(p.createdAt), 'dd/MM/yyyy')}</p>
                   </div>
-                  <p>Status: <strong>{p.status}</strong></p>
+                  <p>
+                    Status:{' '}
+                    <strong className={statusClass(p.status)}>{p.status}</strong>
+                  </p>
                   <p>Produtos: {quantidade}</p>
                   <p>Total: R$ {total.toFixed(2)}</p>
 
                   <div className="mt-2">
                     <p className="font-semibold">Itens:</p>
-                    <ul className="list-disc ml-5">
+                    <ul className="list-disc ml-5 max-h-48 overflow-auto">
                       {p.items.map((item, idx) => (
-                        <li key={idx}>
+                        <li key={idx} className="break-words">
                           {item.variation.product.name} - {item.variation.size} (
                           {item.quantity}x R$ {item.price.toFixed(2)})
                         </li>
@@ -140,7 +164,7 @@ export default function MeusPedidosPage() {
                   </div>
 
                   {p.trackingCode && (
-                    <p className="mt-2">
+                    <p className="mt-2 break-words">
                       Rastreio:{' '}
                       <span className="font-mono text-blue-700">{p.trackingCode}</span>
                     </p>

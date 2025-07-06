@@ -1,17 +1,30 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import api from '@/lib/api';
-import { format } from 'date-fns';
+import { useEffect, useState } from 'react'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from '@/components/ui/card'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
+import api from '@/lib/api'
+import { format } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 interface Pedido {
-  id: string;
-  status: string;
-  vendedora: string;
-  total: number;
-  data: string;
+  id: string
+  status: string
+  vendedora: string
+  total: number
+  data: string
 }
 
 export default function DashboardAdminPage() {
@@ -23,24 +36,38 @@ export default function DashboardAdminPage() {
     totalBonus: 0,
     ultimosPedidos: [] as Pedido[],
     pedidosMensais: [] as { mes: string; total: number }[],
-  });
+  })
+
+  const router = useRouter()
 
   const fetchData = async () => {
     try {
-      const res = await api.get('/dashboard/admin');
-      setData(res.data);
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.push('/login') // redireciona para login se não tiver token
+        return
+      }
+
+      const res = await api.get('/dashboard/admin', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      setData(res.data)
     } catch (err) {
-      console.error('Erro ao carregar dashboard admin:', err);
+      console.error('Erro ao carregar dashboard admin:', err)
+      router.push('/login') // opcional: redirecionar também em erro de autenticação
     }
-  };
+  }
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData()
+  }, [])
 
   return (
-    <div className="space-y-6">
-      {/* 🧾 Totais */}
+    <div className="space-y-6 px-4 sm:px-6">
+      {/* Totais */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader>
@@ -63,7 +90,9 @@ export default function DashboardAdminPage() {
             <CardTitle>💰 Vendas</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">R$ {data.totalVendas.toFixed(2)}</p>
+            <p className="text-2xl font-bold">
+              R$ {data.totalVendas.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -71,7 +100,9 @@ export default function DashboardAdminPage() {
             <CardTitle>💸 Comissões</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">R$ {data.totalComissoes.toFixed(2)}</p>
+            <p className="text-2xl font-bold">
+              R$ {data.totalComissoes.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -79,12 +110,14 @@ export default function DashboardAdminPage() {
             <CardTitle>🎁 Bônus</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">R$ {data.totalBonus.toFixed(2)}</p>
+            <p className="text-2xl font-bold">
+              R$ {data.totalBonus.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* 📈 Gráfico de Vendas Mensais */}
+      {/* Gráfico de Vendas Mensais */}
       <Card>
         <CardHeader>
           <CardTitle>📊 Vendas dos Últimos 6 Meses</CardTitle>
@@ -101,13 +134,13 @@ export default function DashboardAdminPage() {
         </CardContent>
       </Card>
 
-      {/* 📋 Últimos Pedidos */}
+      {/* Últimos Pedidos */}
       <Card>
         <CardHeader>
           <CardTitle>🕓 Últimos Pedidos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-auto">
+          <div className="overflow-x-auto">
             <table className="min-w-full text-sm text-left">
               <thead>
                 <tr className="border-b">
@@ -136,5 +169,5 @@ export default function DashboardAdminPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

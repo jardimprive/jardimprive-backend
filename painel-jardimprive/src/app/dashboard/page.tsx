@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation'; // 🔄 Para redirecionar
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,14 +47,17 @@ export default function DashboardPage() {
           api.get('/payments'),
         ]);
 
-        const comm = commRes.data.filter((c: any) => c.status === 'PENDENTE');
-        setCommission(comm.reduce((acc: number, item: any) => acc + item.amount, 0));
+        const comm = Array.isArray(commRes.data) ? commRes.data : [];
+        setCommission(comm.filter((c: any) => c.status === 'PENDENTE').reduce((acc, item) => acc + item.amount, 0));
 
-        setBonus(bonusRes.data.reduce((acc: number, item: any) => acc + item.value, 0));
-        setWithdrawals(withdrawRes.data.reduce((acc: number, item: any) => acc + item.amount, 0));
+        const bonusArr = Array.isArray(bonusRes.data) ? bonusRes.data : [];
+        setBonus(bonusArr.reduce((acc, item) => acc + item.value, 0));
 
-        const pendings = paymentRes.data.filter((p: any) => p.status !== 'PAGO');
-        setPendingPayments(pendings.reduce((acc: number, item: any) => acc + item.amount, 0));
+        const withdrawArr = Array.isArray(withdrawRes.data) ? withdrawRes.data : [];
+        setWithdrawals(withdrawArr.reduce((acc, item) => acc + item.amount, 0));
+
+        const pendings = Array.isArray(paymentRes.data) ? paymentRes.data : [];
+        setPendingPayments(pendings.filter((p: any) => p.status !== 'PAGO').reduce((acc, item) => acc + item.amount, 0));
 
         const summaryRes = await api.get('/dashboard/summary');
         setSummary(summaryRes.data);
@@ -69,7 +72,6 @@ export default function DashboardPage() {
       }
     } catch (error: any) {
       console.error('Erro ao buscar dados:', error);
-
       if (error.response?.status === 401 || error.response?.status === 403) {
         localStorage.removeItem('token');
         router.push('/login');
@@ -113,8 +115,44 @@ export default function DashboardPage() {
     { title: '🏦 Saques Realizados', value: summary.totalSaques, color: 'bg-purple-100 text-purple-800' },
   ];
 
+  const getProgressColor = () => {
+    if (meta.progresso >= 70) return 'bg-green-500';
+    if (meta.progresso >= 30) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-screen px-4 sm:px-6 space-y-6 overflow-x-hidden">
+      {userRole === 'VENDEDORA' && (
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+          <Card>
+            <CardHeader>
+              <CardTitle>🎯 Progresso da Meta</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p>
+                Você completou <strong>{meta.totalVendasValidas}</strong> de <strong>60</strong> vendas.
+              </p>
+              <Progress value={meta.progresso} className={getProgressColor()} />
+              <p>{meta.progresso.toFixed(0)}% da meta concluída</p>
+              <p className="text-sm text-muted-foreground">
+                A cada 10 vendas de no mínimo R$250 você ganha <strong>R$200</strong> de bônus.
+              </p>
+
+              {meta.ganhouHotel && (
+                <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded-lg">
+                  🎉 <strong>Parabéns!</strong> Você concluiu a meta de 60 vendas!
+                  <br />
+                  <Button className="mt-2" onClick={() => router.push('/dashboard/hotel')}>
+                    Agendar hospedagem no hotel 5 estrelas
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       {userRole === 'ADMIN' && (
         <Card>
           <CardHeader>
@@ -122,7 +160,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Acesse o menu lateral para gerenciar pedidos, produtos, vendedoras, saques, etc.
+              Acesse o menu lateral para gerenciar pedidos, produtos, vendedoras, saques etc.
             </p>
           </CardContent>
         </Card>
@@ -153,7 +191,7 @@ export default function DashboardPage() {
 
           {/* Gráficos */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="p-4">
+            <Card className="p-0 sm:p-4">
               <CardHeader>
                 <CardTitle>📊 Distribuição Geral</CardTitle>
               </CardHeader>
@@ -174,12 +212,16 @@ export default function DashboardPage() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip
+                    formatter={(value) =>
+                      `R$ ${(value as number).toFixed(2).replace('.', ',')}`
+                    }
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </Card>
 
-            <Card className="p-4">
+            <Card className="p-0 sm:p-4">
               <CardHeader>
                 <CardTitle>📈 Comparativo Geral</CardTitle>
               </CardHeader>
@@ -187,37 +229,17 @@ export default function DashboardPage() {
                 <BarChart data={barData}>
                   <XAxis dataKey="name" />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip
+                    formatter={(value) =>
+                      `R$ ${(value as number).toFixed(2).replace('.', ',')}`
+                    }
+                  />
                   <Legend />
                   <Bar dataKey="valor" fill="#60A5FA" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </Card>
           </div>
-
-          {/* Progresso da meta */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>🎯 Progresso da Meta</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p>
-                Você completou <strong>{meta.totalVendasValidas}</strong> de <strong>60</strong> vendas.
-              </p>
-              <Progress value={meta.progresso} />
-              <p className="text-sm text-muted-foreground">
-                A cada 10 vendas de no mínimo R$250 você ganha <strong>R$200</strong> de bônus.
-              </p>
-
-              {meta.ganhouHotel && (
-                <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded-lg">
-                  🎉 <strong>Parabéns!</strong> Você concluiu a meta de 60 vendas!
-                  <br />
-                  <Button className="mt-2">Agendar hospedagem no hotel 5 estrelas</Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </>
       )}
     </div>

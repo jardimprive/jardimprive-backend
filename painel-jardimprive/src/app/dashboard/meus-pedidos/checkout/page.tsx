@@ -25,6 +25,7 @@ export default function CheckoutPage() {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [endereco, setEndereco] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Pagamento>('AVISTA');
+  const [carregando, setCarregando] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('carrinho');
@@ -36,7 +37,7 @@ export default function CheckoutPage() {
   const total = carrinho.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const finalizarPedido = async () => {
-    if (!endereco) {
+    if (!endereco.trim()) {
       alert('Informe o endereço de entrega.');
       return;
     }
@@ -52,9 +53,12 @@ export default function CheckoutPage() {
     };
 
     try {
+      setCarregando(true);
+
       if (formaPagamento === 'CARTAO') {
         const res = await api.post('/orders/checkout', payload);
         if (res.data.checkoutUrl) {
+          localStorage.removeItem('carrinho');
           window.location.href = res.data.checkoutUrl;
         } else {
           alert('Erro ao gerar link de pagamento.');
@@ -73,6 +77,8 @@ export default function CheckoutPage() {
     } catch (err) {
       console.error('Erro ao criar pedido:', err);
       alert('Erro ao criar pedido');
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -81,46 +87,50 @@ export default function CheckoutPage() {
       <CardHeader>
         <CardTitle>📦 Finalizar Pedido</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Resumo dos itens */}
+
+      <CardContent className="space-y-6 px-4 sm:px-6 md:px-8">
+        {/* ✅ Itens do carrinho */}
         <div className="space-y-2">
-          <h2 className="font-semibold">Itens:</h2>
+          <h2 className="font-semibold">Itens no Carrinho:</h2>
           <ul className="space-y-1 text-sm">
             {carrinho.map((item, index) => (
               <li key={index}>
-                {item.name} - {item.size} • {item.quantity} un • R$ {item.price.toFixed(2)} cada
+                {item.name} - {item.size} • {item.quantity} un •{' '}
+                <strong>R$ {item.price.toFixed(2)}</strong>
               </li>
             ))}
           </ul>
-          <p className="text-right font-bold">Total: R$ {total.toFixed(2)}</p>
+          <p className="text-right font-bold text-lg">
+            Total: R$ {total.toFixed(2)}
+          </p>
         </div>
 
-        {/* Endereço */}
+        {/* 🏠 Endereço */}
         <div>
-          <Label>Endereço de Entrega</Label>
+          <Label htmlFor="endereco">Endereço de Entrega</Label>
           <Input
+            id="endereco"
             value={endereco}
             onChange={(e) => setEndereco(e.target.value)}
             placeholder="Rua, número, bairro, cidade..."
-            required
           />
         </div>
 
-        {/* Forma de pagamento */}
+        {/* 💳 Forma de pagamento */}
         <div>
           <Label>Forma de Pagamento</Label>
           <RadioGroup
             value={formaPagamento}
             onValueChange={(val) => setFormaPagamento(val as Pagamento)}
-            className="mt-2"
+            className="mt-3 space-y-2"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="AVISTA" id="avista" />
-              <Label htmlFor="avista">À vista (boleto ou manual)</Label>
+              <Label htmlFor="avista">À vista (boleto/manual)</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="PARCELADO" id="parcelado" />
-              <Label htmlFor="parcelado">50% entrada + 50% em 30 dias</Label>
+              <Label htmlFor="parcelado">50% agora + 50% em 30 dias</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="CARTAO" id="cartao" />
@@ -129,8 +139,12 @@ export default function CheckoutPage() {
           </RadioGroup>
         </div>
 
-        <Button className="mt-4 w-full" onClick={finalizarPedido}>
-          Finalizar Pedido
+        <Button
+          className="mt-4 w-full"
+          onClick={finalizarPedido}
+          disabled={carregando}
+        >
+          {carregando ? 'Finalizando...' : 'Finalizar Pedido'}
         </Button>
       </CardContent>
     </Card>

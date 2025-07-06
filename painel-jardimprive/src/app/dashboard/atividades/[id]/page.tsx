@@ -28,12 +28,24 @@ export default function DetalhesAtividadePage() {
 
   const fetchDetalhes = async () => {
     try {
-      const res = await api.get('/dashboard/atividade');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const res = await api.get('/dashboard/atividade', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       const historico: Atividade[] = res.data;
       const encontrada = historico.find((a) => a.id === id);
       setAtividade(encontrada || null);
     } catch (err) {
       console.error('Erro ao buscar detalhes da atividade:', err);
+      router.push('/login');
     }
   };
 
@@ -43,7 +55,7 @@ export default function DetalhesAtividadePage() {
 
   if (!atividade) {
     return (
-      <Card>
+      <Card className="mx-4 sm:mx-6">
         <CardHeader>
           <CardTitle>Atividade não encontrada</CardTitle>
         </CardHeader>
@@ -58,7 +70,7 @@ export default function DetalhesAtividadePage() {
   }
 
   return (
-    <Card>
+    <Card className="mx-4 sm:mx-6">
       <CardHeader>
         <CardTitle>🔎 Detalhes da Atividade</CardTitle>
       </CardHeader>

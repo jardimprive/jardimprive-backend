@@ -33,39 +33,39 @@ export default function HotelAdminPage() {
   }, []);
 
   return (
-    <Card>
+    <Card className="p-4 max-w-5xl mx-auto">
       <CardHeader>
-        <CardTitle>🏨 Reservas do Hotel (Admin)</CardTitle>
+        <CardTitle>🏨 Reservas de Diárias no Hotel (Admin)</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-auto">
-          <table className="min-w-full mt-4 text-sm text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4">Vendedora</th>
-                <th className="py-2 px-4">E-mail</th>
-                <th className="py-2 px-4">Data Agendada</th>
-                <th className="py-2 px-4">ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reservas.map((r) => (
-                <tr key={r.id} className="border-b">
-                  <td className="py-2 px-4">{r.user.name}</td>
-                  <td className="py-2 px-4">{r.user.email}</td>
-                  <td className="py-2 px-4">{format(new Date(r.date), 'dd/MM/yyyy')}</td>
-                  <td className="py-2 px-4">{r.user.id}</td>
+        {reservas.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            Nenhuma reserva encontrada.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full mt-4 text-sm border rounded table-auto">
+              <thead className="bg-gray-50">
+                <tr className="text-left border-b">
+                  <th className="py-3 px-4">Vendedora</th>
+                  <th className="py-3 px-4">E-mail</th>
+                  <th className="py-3 px-4">Data Agendada</th>
+                  <th className="py-3 px-4">ID Usuária</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {reservas.length === 0 && (
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Nenhuma reserva encontrada.
-            </p>
-          )}
-        </div>
+              </thead>
+              <tbody>
+                {reservas.map((r) => (
+                  <tr key={r.id} className="border-b hover:bg-gray-50">
+                    <td className="py-2 px-4 max-w-xs truncate">{r.user.name}</td>
+                    <td className="py-2 px-4 max-w-xs truncate">{r.user.email}</td>
+                    <td className="py-2 px-4 whitespace-nowrap">{format(new Date(r.date), 'dd/MM/yyyy')}</td>
+                    <td className="py-2 px-4 whitespace-nowrap">{r.user.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

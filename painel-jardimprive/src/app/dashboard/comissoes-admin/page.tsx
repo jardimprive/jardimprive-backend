@@ -44,51 +44,47 @@ export default function ComissoesAdminPage() {
   }, []);
 
   return (
-    <Card>
+    <Card className="mx-4 sm:mx-6 max-w-4xl">
       <CardHeader>
         <CardTitle>💰 Gerenciar Comissões</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-auto">
-          <table className="min-w-full mt-4 text-sm text-left">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] mt-4 text-sm text-left border-collapse">
             <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4">Vendedora</th>
-                <th className="py-2 px-4">E-mail</th>
-                <th className="py-2 px-4">Valor</th>
-                <th className="py-2 px-4">Status</th>
-                <th className="py-2 px-4">Pedido</th>
-                <th className="py-2 px-4">Data</th>
-                <th className="py-2 px-4">Ações</th>
+              <tr className="border-b bg-muted">
+                <th className="py-2 px-2 sm:px-4">Vendedora</th>
+                <th className="py-2 px-2 sm:px-4">E-mail</th>
+                <th className="py-2 px-2 sm:px-4">Valor</th>
+                <th className="py-2 px-2 sm:px-4">Status</th>
+                <th className="py-2 px-2 sm:px-4">Pedido</th>
+                <th className="py-2 px-2 sm:px-4">Data</th>
+                <th className="py-2 px-2 sm:px-4">Ações</th>
               </tr>
             </thead>
             <tbody>
               {comissoes.map((c) => (
-                <tr key={c.id} className="border-b">
-                  <td className="py-2 px-4">{c.user.name}</td>
-                  <td className="py-2 px-4">{c.user.email}</td>
-                  <td className="py-2 px-4">R$ {c.amount.toFixed(2)}</td>
-                  <td className="py-2 px-4">
+                <tr key={c.id} className="border-b even:bg-gray-50">
+                  <td className="py-2 px-2 sm:px-4">{c.user.name}</td>
+                  <td className="py-2 px-2 sm:px-4 break-all">{c.user.email}</td>
+                  <td className="py-2 px-2 sm:px-4">R$ {c.amount.toFixed(2)}</td>
+                  <td className="py-2 px-2 sm:px-4">
                     <Badge
-                      variant="default"
                       className={
-                        c.status === 'PAGA'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                        c.status === 'PENDENTE'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
                       }
                     >
                       {c.status}
                     </Badge>
                   </td>
-                  <td className="py-2 px-4">{c.orderId}</td>
-                  <td className="py-2 px-4">
-                    {new Date(c.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-2 px-4">
+                  <td className="py-2 px-2 sm:px-4">{c.orderId}</td>
+                  <td className="py-2 px-2 sm:px-4">{new Date(c.createdAt).toLocaleDateString()}</td>
+                  <td className="py-2 px-2 sm:px-4 whitespace-nowrap">
                     {c.status === 'PENDENTE' && (
                       <Button
                         size="sm"
-                        variant="default"
                         className="bg-green-600 hover:bg-green-700 text-white"
                         onClick={() => atualizarStatus(c.id, 'PAGA')}
                       >

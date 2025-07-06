@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Router from 'next/router';
 
 const api = axios.create({
   baseURL: 'https://jardimprive-backend.onrender.com/api',
@@ -22,7 +21,9 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
-      Router.push('/login');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';  // redireciona diretamente
+      }
     }
     return Promise.reject(error);
   }

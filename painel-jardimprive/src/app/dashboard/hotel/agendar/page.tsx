@@ -49,14 +49,15 @@ export default function AgendarHotelPage() {
   }, []);
 
   return (
-    <Card>
+    <Card className="p-6 max-w-md mx-auto">
       <CardHeader>
         <CardTitle>🏨 Agendar Diária no Hotel</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {minhaDiaria ? (
           <p className="text-sm">
-            Você já agendou sua diária para o dia: <strong>{format(new Date(minhaDiaria.date), 'dd/MM/yyyy')}</strong>
+            Você já agendou sua diária para o dia:{' '}
+            <strong>{format(new Date(minhaDiaria.date), 'dd/MM/yyyy')}</strong>
           </p>
         ) : (
           <>
@@ -66,10 +67,11 @@ export default function AgendarHotelPage() {
               value={data}
               onChange={(e) => setData(e.target.value)}
               min={new Date().toISOString().split('T')[0]} // impede datas passadas
+              className="w-full"
               required
             />
 
-            <Button className="mt-2" onClick={agendar}>
+            <Button className="mt-2 w-full sm:w-auto" onClick={agendar}>
               Confirmar Agendamento
             </Button>
           </>

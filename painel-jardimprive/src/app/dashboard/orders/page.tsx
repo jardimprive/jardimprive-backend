@@ -39,8 +39,17 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
 
-  // 🔥 Buscar pedidos existentes
+  // Carregar estado do localStorage ao montar
   useEffect(() => {
+    const savedCart = localStorage.getItem("cart");
+    const savedPayment = localStorage.getItem("paymentMethod");
+    const savedAddress = localStorage.getItem("address");
+
+    if (savedCart) setCart(JSON.parse(savedCart));
+    if (savedPayment) setPaymentMethod(savedPayment);
+    if (savedAddress) setAddress(savedAddress);
+
+    // Buscar pedidos
     const fetchOrders = async () => {
       try {
         const res = await api.get("/order");
@@ -55,7 +64,21 @@ export default function OrdersPage() {
     fetchOrders();
   }, []);
 
-  // ➕ Adicionar produto
+  // Salvar no localStorage quando cart mudar
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
+
+  // Salvar paymentMethod no localStorage
+  useEffect(() => {
+    localStorage.setItem("paymentMethod", paymentMethod);
+  }, [paymentMethod]);
+
+  // Salvar address no localStorage
+  useEffect(() => {
+    localStorage.setItem("address", address);
+  }, [address]);
+
   const handleAdd = (id: string) => {
     setCart((prev) => ({
       ...prev,
@@ -63,7 +86,6 @@ export default function OrdersPage() {
     }));
   };
 
-  // ➖ Remover produto
   const handleRemove = (id: string) => {
     setCart((prev) => {
       const newCart = { ...prev };
@@ -81,7 +103,6 @@ export default function OrdersPage() {
     return acc + (produto ? produto.preco * qty : 0);
   }, 0);
 
-  // 🚀 Enviar pedido
   const handleSubmit = async () => {
     if (Object.keys(cart).length === 0) {
       alert("⚠️ Adicione pelo menos 1 produto!");
@@ -116,6 +137,11 @@ export default function OrdersPage() {
       });
 
       if (response.data.checkoutUrl) {
+        // Limpar localStorage após pedido feito
+        localStorage.removeItem("cart");
+        localStorage.removeItem("paymentMethod");
+        localStorage.removeItem("address");
+
         window.location.href = response.data.checkoutUrl;
       } else {
         alert("Erro ao gerar o link de pagamento.");
@@ -127,40 +153,40 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 space-y-8">
-      <h1 className="text-2xl font-bold">🛍️ Finalizar Pedido</h1>
+    <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-6 lg:px-8 space-y-10">
+      <h1 className="text-3xl font-bold text-center sm:text-left">🛍️ Finalizar Pedido</h1>
 
-      {/* 🛍️ Produtos */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Escolha os produtos:</h2>
+      {/* Produtos */}
+      <section className="space-y-6">
+        <h2 className="text-xl font-semibold">Escolha os produtos:</h2>
 
         {produtos.map((produto) => {
           const quantidade = cart[produto.id] || 0;
           return (
             <div
               key={produto.id}
-              className="flex items-center justify-between border rounded p-4"
+              className="flex flex-col sm:flex-row items-center justify-between border rounded p-4"
             >
-              <div>
+              <div className="mb-2 sm:mb-0 text-center sm:text-left">
                 <p className="font-semibold">{produto.nome}</p>
-                <p className="text-sm text-gray-500">
-                  R$ {produto.preco.toFixed(2)}
-                </p>
+                <p className="text-sm text-gray-500">R$ {produto.preco.toFixed(2)}</p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleRemove(produto.id)}
+                  aria-label={`Remover uma unidade de ${produto.nome}`}
                 >
                   -
                 </Button>
-                <span>{quantidade}</span>
+                <span className="w-6 text-center">{quantidade}</span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleAdd(produto.id)}
+                  aria-label={`Adicionar uma unidade de ${produto.nome}`}
                 >
                   +
                 </Button>
@@ -168,45 +194,50 @@ export default function OrdersPage() {
             </div>
           );
         })}
-      </div>
+      </section>
 
-      {/* 💳 Pagamento */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Forma de pagamento:</h2>
-        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-          <SelectItem value="AVISTA">À Vista</SelectItem>
-          <SelectItem value="PARCELADO">50% Entrada + 50% depois</SelectItem>
-          <SelectItem value="CARTAO">Cartão de Crédito</SelectItem>
-        </Select>
-      </div>
+      {/* Pagamento */}
+      <section className="space-y-2">
+        <h2 className="text-xl font-semibold">Forma de pagamento:</h2>
+        <div className="w-full max-w-xs">
+          <Select
+            value={paymentMethod}
+            onValueChange={setPaymentMethod}
+            aria-label="Forma de pagamento"
+          >
+            <SelectItem value="AVISTA">À Vista</SelectItem>
+            <SelectItem value="PARCELADO">50% Entrada + 50% depois</SelectItem>
+            <SelectItem value="CARTAO">Cartão de Crédito</SelectItem>
+          </Select>
+        </div>
+      </section>
 
-      {/* 🏠 Endereço */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Endereço de entrega:</h2>
+      {/* Endereço */}
+      <section className="space-y-2">
+        <h2 className="text-xl font-semibold">Endereço de entrega:</h2>
         <textarea
-          className="w-full border rounded p-2"
+          className="w-full border rounded p-2 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
           rows={3}
           placeholder="Rua, número, bairro, cidade, complemento..."
           value={address}
           onChange={(e) => setAddress(e.target.value)}
+          aria-label="Endereço de entrega"
         />
-      </div>
+      </section>
 
-      {/* 🧾 Total */}
+      {/* Total */}
       <div className="text-right">
-        <p className="text-lg font-semibold">
-          Total: R$ {total.toFixed(2)}
-        </p>
+        <p className="text-xl font-semibold">Total: R$ {total.toFixed(2)}</p>
       </div>
 
-      {/* 🚀 Finalizar */}
-      <Button onClick={handleSubmit} className="w-full">
+      {/* Finalizar */}
+      <Button onClick={handleSubmit} className="w-full" size="lg">
         Finalizar Pedido e Pagar
       </Button>
 
-      {/* 🔥 Histórico de Pedidos */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold">📜 Meus Pedidos</h2>
+      {/* Histórico de pedidos */}
+      <section className="space-y-6">
+        <h2 className="text-3xl font-bold">📜 Meus Pedidos</h2>
 
         {loadingOrders ? (
           <p>Carregando pedidos...</p>
@@ -220,28 +251,23 @@ export default function OrdersPage() {
             );
 
             return (
-              <Card key={order.id} className="p-4 space-y-2">
-                <div className="flex justify-between">
-                  <div>
+              <Card key={order.id} className="p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between">
+                  <div className="break-words">
                     <p className="font-semibold">Pedido #{order.id.slice(0, 8)}</p>
                     <p className="text-sm text-gray-500">
                       Data: {new Date(order.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">
-                      Total: R$ {totalOrder.toFixed(2)}
-                    </p>
-                    <p className="text-sm">
-                      Status:{" "}
-                      <span className="capitalize">{order.status}</span>
-                    </p>
+                    <p className="font-semibold">Total: R$ {totalOrder.toFixed(2)}</p>
+                    <p className="text-sm capitalize">Status: {order.status}</p>
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   {order.items.map((item, idx) => (
-                    <p key={idx} className="text-sm">
+                    <p key={idx} className="text-sm break-words">
                       {item.variation.product.name} - {item.variation.size} x{" "}
                       {item.quantity} (R$ {item.price.toFixed(2)} cada)
                     </p>
@@ -249,7 +275,7 @@ export default function OrdersPage() {
                 </div>
 
                 {order.trackingCode && (
-                  <p className="text-sm">
+                  <p className="text-sm break-words">
                     Código de rastreio: <b>{order.trackingCode}</b>
                   </p>
                 )}
@@ -257,7 +283,7 @@ export default function OrdersPage() {
             );
           })
         )}
-      </div>
+      </section>
     </div>
   );
 }
