@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';  // named import
+import { jwtDecode } from 'jwt-decode'; // usar named import
 import NotificationsBanner from '@/components/notifications-banner';
 
 interface MenuItem {
@@ -22,7 +22,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -36,11 +35,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
     const verificarDiaria = async () => {
       const token = localStorage.getItem('token');
       if (!token) return;
-
       try {
         const res = await fetch('/api/hotel/minha-diaria', {
           headers: { Authorization: `Bearer ${token}` },
@@ -51,7 +48,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         console.error('Erro ao verificar diária:', err);
       }
     };
-
     verificarDiaria();
   }, []);
 
@@ -62,25 +58,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  // Base menu for all authenticated users
+  // menu comum a todos (vendedoras + admins)
   const baseMenu: MenuItem[] = [
     { label: '🏠 Início', href: '/dashboard' },
     { label: '🛍 Comprar Produtos', href: '/dashboard/comprar' },
     { label: '🛒 Carrinho', href: '/dashboard/carrinho' },
-    { label: '🎁 Bônus', href: '/dashboard/bonus' },
+    { label: '🎁 Bônus', href: '/dashboard/bonus' },           // só vendedoras/admins
     { label: '💰 Comissões', href: '/dashboard/commissions' },
     { label: '💳 Pagamentos', href: '/dashboard/payments' },
     { label: '🏦 Saques', href: '/dashboard/withdrawals' },
     { label: '🧾 Meus Pedidos', href: '/dashboard/meus-pedidos' },
-    { label: '🔐 Alterar Senha', href: '/dashboard/profile/senha' },
+    { label: '🔐 Alterar Senha', href: '/dashboard/profile/senha' }, // visível pra todos
     { label: '🕓 Histórico de Login', href: '/dashboard/profile/history' },
   ];
-
   if (temDiaria) {
     baseMenu.push({ label: '🏨 Minha Diária no Hotel', href: '/dashboard/hotel' });
   }
 
-  // Additional admin-only menu
+  // menu adicional só para admins
   const adminMenu: MenuItem[] = [
     { label: '📜 Atividades', href: '/dashboard/atividades' },
     { label: '👥 Vendedoras', href: '/dashboard/vendedoras' },
@@ -105,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <p
                 className={cn(
                   'cursor-pointer px-2 py-1 rounded hover:bg-zinc-800 transition-all',
-                  pathname === item.href && 'bg-zinc-800 font-semibold'
+                  pathname === item.href ? 'bg-zinc-800 font-semibold' : ''
                 )}
               >
                 {item.label}
@@ -122,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <p
                     className={cn(
                       'cursor-pointer px-2 py-1 rounded hover:bg-zinc-800 transition-all',
-                      pathname === item.href && 'bg-zinc-800 font-semibold'
+                      pathname === item.href ? 'bg-zinc-800 font-semibold' : ''
                     )}
                   >
                     {item.label}
@@ -138,7 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Button>
       </aside>
 
-      {/* Content area */}
+      {/* Conteúdo */}
       <main className="flex-1 bg-zinc-50 p-4 sm:p-6 space-y-4 overflow-x-auto">
         <NotificationsBanner />
         {children}
