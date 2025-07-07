@@ -74,7 +74,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: '💳 Pagamentos', href: '/dashboard/payments' },
     { label: '🏦 Saques', href: '/dashboard/withdrawals' },
     { label: '🧾 Meus Pedidos', href: '/dashboard/meus-pedidos' },
-    { label: '📜 Atividades', href: '/dashboard/atividades' },
     { label: '🕓 Histórico de Login', href: '/dashboard/profile/history' },
   ];
 
@@ -83,6 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const adminMenu: MenuItem[] = [
+    { label: '📜 Atividades', href: '/dashboard/atividades' }, // <- agora só para admins
     { label: '👥 Vendedoras', href: '/dashboard/vendedoras' },
     { label: '📦 Produtos', href: '/dashboard/produtos' },
     { label: '➕ Cadastrar Produto', href: '/dashboard/produtos/novo' },
