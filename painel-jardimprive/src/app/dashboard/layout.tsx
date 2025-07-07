@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';  // named import
 import NotificationsBanner from '@/components/notifications-banner';
 
 interface MenuItem {
@@ -45,11 +45,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const res = await fetch('/api/hotel/minha-diaria', {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         const data = await res.json();
-        if (res.ok && data?.date) {
-          setTemDiaria(true);
-        }
+        if (res.ok && data?.date) setTemDiaria(true);
       } catch (err) {
         console.error('Erro ao verificar diária:', err);
       }
@@ -65,6 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
+  // Base menu for all authenticated users
   const baseMenu: MenuItem[] = [
     { label: '🏠 Início', href: '/dashboard' },
     { label: '🛍 Comprar Produtos', href: '/dashboard/comprar' },
@@ -74,6 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: '💳 Pagamentos', href: '/dashboard/payments' },
     { label: '🏦 Saques', href: '/dashboard/withdrawals' },
     { label: '🧾 Meus Pedidos', href: '/dashboard/meus-pedidos' },
+    { label: '🔐 Alterar Senha', href: '/dashboard/profile/senha' },
     { label: '🕓 Histórico de Login', href: '/dashboard/profile/history' },
   ];
 
@@ -81,8 +80,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     baseMenu.push({ label: '🏨 Minha Diária no Hotel', href: '/dashboard/hotel' });
   }
 
+  // Additional admin-only menu
   const adminMenu: MenuItem[] = [
-    { label: '📜 Atividades', href: '/dashboard/atividades' }, // <- agora só para admins
+    { label: '📜 Atividades', href: '/dashboard/atividades' },
     { label: '👥 Vendedoras', href: '/dashboard/vendedoras' },
     { label: '📦 Produtos', href: '/dashboard/produtos' },
     { label: '➕ Cadastrar Produto', href: '/dashboard/produtos/novo' },
@@ -90,7 +90,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: '🧾 Saques (admin)', href: '/dashboard/saques' },
     { label: '🎁 Bônus (admin)', href: '/dashboard/bonus-admin' },
     { label: '🏨 Reservas do Hotel (Admin)', href: '/dashboard/hotel/admin' },
-    { label: '🔐 Alterar Senha', href: '/dashboard/profile/senha' },
     { label: '📤 Relatórios', href: '/dashboard/relatorios' },
   ];
 
@@ -134,16 +133,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </nav>
 
-        <Button
-          variant="destructive"
-          className="mt-6 w-full"
-          onClick={handleLogout}
-        >
+        <Button variant="destructive" className="mt-6 w-full" onClick={handleLogout}>
           Sair
         </Button>
       </aside>
 
-      {/* Conteúdo */}
+      {/* Content area */}
       <main className="flex-1 bg-zinc-50 p-4 sm:p-6 space-y-4 overflow-x-auto">
         <NotificationsBanner />
         {children}
