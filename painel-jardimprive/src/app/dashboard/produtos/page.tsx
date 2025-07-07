@@ -28,17 +28,14 @@ interface Product {
 }
 
 export default function ProdutosPage() {
-  const [produtos, setProdutos] = useState<Product[]>([]);
-  const router = useRouter();
-
-  // Carrega do localStorage e depois atualiza com dados da API
-  useEffect(() => {
+  const [produtos, setProdutos] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('produtos_cache');
-      if (saved) setProdutos(JSON.parse(saved));
+      return saved ? JSON.parse(saved) : [];
     }
-    fetchProdutos();
-  }, []);
+    return [];
+  });
+  const router = useRouter();
 
   const fetchProdutos = async () => {
     try {
@@ -52,14 +49,15 @@ export default function ProdutosPage() {
     }
   };
 
+  useEffect(() => {
+    fetchProdutos();
+  }, []);
+
   const toggleAtivo = async (id: string, ativo: boolean) => {
     try {
       await api.put(`/products/${id}`, { active: !ativo });
-      setProdutos((prev) =>
-        prev.map((p) =>
-          p.id === id ? { ...p, active: !ativo } : p
-        )
-      );
+      // Atualiza estado e cache
+      fetchProdutos();
     } catch (err) {
       console.error('Erro ao alterar status:', err);
     }
@@ -70,7 +68,8 @@ export default function ProdutosPage() {
 
     try {
       await api.delete(`/products/${id}`);
-      setProdutos((prev) => prev.filter((p) => p.id !== id));
+      // Recarrega lista e cache
+      fetchProdutos();
     } catch (err) {
       console.error('Erro ao deletar produto:', err);
     }
@@ -103,18 +102,25 @@ export default function ProdutosPage() {
             <tbody>
               {produtos.map((produto) => (
                 <tr key={produto.id} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-2 sm:px-4 max-w-xs truncate" title={produto.description}>
-                    <strong>{produto.name}</strong>
-                    <p className="text-muted-foreground truncate text-xs sm:text-sm">
-                      {produto.description}
-                    </p>
+                  <td className="py-2 px-2 sm:px-4 max-w-xs truncate flex items-center gap-2">
+                    {produto.image && (
+                      <img
+                        src={produto.image}
+                        alt={produto.name}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    )}
+                    <div>
+                      <strong>{produto.name}</strong>
+                      <p className="text-muted-foreground truncate text-xs sm:text-sm" title={produto.description}>
+                        {produto.description}
+                      </p>
+                    </div>
                   </td>
                   <td className="py-2 px-2 sm:px-4 text-center">
                     <Switch
                       checked={produto.active}
-                      onCheckedChange={() =>
-                        toggleAtivo(produto.id, produto.active)
-                      }
+                      onCheckedChange={() => toggleAtivo(produto.id, produto.active)}
                       aria-label={`Ativar ou desativar ${produto.name}`}
                     />
                   </td>
@@ -123,9 +129,7 @@ export default function ProdutosPage() {
                       <div
                         key={v.id}
                         className="text-xs sm:text-sm truncate"
-                        title={`${v.size} • R$ ${v.price.toFixed(
-                          2
-                        )} • Estoque: ${v.stock}`}
+                        title={`${v.size} • R$ ${v.price.toFixed(2)} • Estoque: ${v.stock}`}
                       >
                         {v.size} • R$ {v.price.toFixed(2)} • Estoque: {v.stock}
                       </div>
@@ -136,9 +140,7 @@ export default function ProdutosPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() =>
-                          router.push(`/dashboard/produtos/${produto.id}/editar`)
-                        }
+                        onClick={() => router.push(`/dashboard/produtos/${produto.id}/editar`)}
                       >
                         Editar
                       </Button>
