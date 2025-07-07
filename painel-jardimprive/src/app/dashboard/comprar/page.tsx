@@ -44,6 +44,7 @@ export default function ComprarPage() {
         console.error('Erro ao buscar produtos:', err);
       }
     };
+
     fetchProdutos();
   }, []);
 
@@ -94,23 +95,29 @@ export default function ComprarPage() {
       <CardContent className="space-y-6">
         {produtos.map((produto) => (
           <div key={produto.id} className="border p-4 rounded-xl shadow-sm bg-white space-y-3">
+            {/* Imagem do produto */}
             {produto.image && (
-              <img
-                src={produto.image}
-                alt={produto.name}
-                className="w-full h-48 object-cover rounded-md"
-              />
+              <div className="w-full flex justify-center">
+                <img
+                  src={produto.image}
+                  alt={produto.name}
+                  className="w-32 h-32 object-cover rounded-md"
+                />
+              </div>
             )}
-            <h2 className="font-bold text-lg">{produto.name}</h2>
-            <p className="text-sm text-muted-foreground">{produto.description}</p>
 
+            {/* Nome e descrição */}
+            <h2 className="font-bold text-lg text-center sm:text-left">{produto.name}</h2>
+            <p className="text-sm text-muted-foreground text-center sm:text-left">{produto.description}</p>
+
+            {/* Variações */}
             <div className="space-y-3">
               {produto.variations.map((v) => (
                 <div
                   key={v.id}
                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-t pt-2 mt-2 gap-2"
                 >
-                  <p>
+                  <p className="text-sm font-medium">
                     <strong>{v.size}</strong> • R$ {v.price.toFixed(2)} • Estoque: {v.stock}
                   </p>
 
