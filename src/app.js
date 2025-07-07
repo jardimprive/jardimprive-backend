@@ -18,13 +18,25 @@ const teamLeaderRoutes = require('./routes/teamLeader.routes');
 
 const app = express();
 
+// ✅ CORS dinâmico baseado em variáveis de ambiente
+const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [];
+
 const corsOptions = {
-  origin: 'https://painel-jardimprive.vercel.app',
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Permite chamadas sem origin (ex: Postman)
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true, // deixe true se usar cookies ou autenticação com credenciais
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // ✅ Suporte ao preflight request
 app.use(express.json());
 
 // Rotas
