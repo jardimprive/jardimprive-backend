@@ -31,10 +31,10 @@ interface CarrinhoItem {
 export default function ComprarPage() {
   const [produtos, setProdutos] = useState<Product[]>([]);
   const [quantidades, setQuantidades] = useState<{ [variationId: string]: number }>({});
-  const [isClient, setIsClient] = useState(false); // Garante que o localStorage só seja usado no client
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true); // Marca que já está no client
+    setIsClient(true);
     const fetchProdutos = async () => {
       try {
         const res = await api.get('/products');
@@ -44,7 +44,6 @@ export default function ComprarPage() {
         console.error('Erro ao buscar produtos:', err);
       }
     };
-
     fetchProdutos();
   }, []);
 
@@ -84,7 +83,7 @@ export default function ComprarPage() {
     setQuantidades((prev) => ({ ...prev, [variacaoId]: 1 }));
   };
 
-  if (!isClient) return null; // Garante que o componente só renderize após montagem no client
+  if (!isClient) return null;
 
   return (
     <Card>
@@ -95,6 +94,13 @@ export default function ComprarPage() {
       <CardContent className="space-y-6">
         {produtos.map((produto) => (
           <div key={produto.id} className="border p-4 rounded-xl shadow-sm bg-white space-y-3">
+            {produto.image && (
+              <img
+                src={produto.image}
+                alt={produto.name}
+                className="w-full h-48 object-cover rounded-md"
+              />
+            )}
             <h2 className="font-bold text-lg">{produto.name}</h2>
             <p className="text-sm text-muted-foreground">{produto.description}</p>
 
