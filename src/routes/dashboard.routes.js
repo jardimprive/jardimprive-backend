@@ -11,7 +11,7 @@ router.get('/summary', auth, dashboardController.getDashboardSummary);
 router.get('/atividade', auth, dashboardController.getUserActivity);
 
 // 🔍 Detalhes de uma atividade específica (tipo e id)
-router.get('/atividade/:id', auth, dashboardController.getAtividadeDetalhada); // ✅ NOVA ROTA
+router.get('/atividade/:id', auth, dashboardController.getAtividadeDetalhada);
 
 // 🔴 ADMIN: Dashboard geral com totais
 router.get('/admin', auth, isAdmin, dashboardController.getAdminDashboard);

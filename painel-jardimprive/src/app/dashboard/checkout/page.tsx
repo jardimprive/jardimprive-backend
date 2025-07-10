@@ -18,6 +18,7 @@ interface ItemCarrinho {
 }
 
 type Pagamento = 'AVISTA' | 'PARCELADO' | 'CARTAO';
+type MetodoEntrada = 'PIX' | 'CARTAO';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function CheckoutPage() {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
   const [endereco, setEndereco] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Pagamento>('AVISTA');
+  const [metodoEntrada, setMetodoEntrada] = useState<MetodoEntrada>('PIX');
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -55,32 +57,49 @@ export default function CheckoutPage() {
         price: item.price,
       })),
       address: endereco,
-      paymentMethod: formaPagamento,
     };
 
     try {
       setCarregando(true);
-      setErro(null); // Limpar erro anterior, se houver
+      setErro(null);
 
       if (formaPagamento === 'CARTAO') {
-        const res = await api.post('/orders/checkout', payload);
+        const res = await api.post('/orders/checkout', {
+          ...payload,
+          paymentMethod: 'CARTAO',
+        });
         if (res.data.checkoutUrl) {
           localStorage.removeItem('carrinho');
           window.location.href = res.data.checkoutUrl;
         } else {
           setErro('Erro ao gerar link de pagamento.');
         }
-      } else {
-        const res = await api.post('/orders', {
+      }
+
+      else if (formaPagamento === 'AVISTA') {
+        const res = await api.post('/orders/pix', payload);
+        if (res.data.checkoutUrl) {
+          localStorage.removeItem('carrinho');
+          window.location.href = res.data.checkoutUrl;
+        } else {
+          setErro('Erro ao gerar QR Code PIX.');
+        }
+      }
+
+      else if (formaPagamento === 'PARCELADO') {
+        const res = await api.post('/orders/entrada', {
           ...payload,
-          paymentType: formaPagamento,
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 dias
+          paymentMethod: metodoEntrada,
         });
 
-        alert('Pedido criado com sucesso!');
-        localStorage.removeItem('carrinho');
-        router.push('/dashboard');
+        if (res.data.checkoutUrl) {
+          localStorage.removeItem('carrinho');
+          window.location.href = res.data.checkoutUrl;
+        } else {
+          setErro('Erro ao gerar link de entrada parcelada.');
+        }
       }
+
     } catch (err) {
       console.error('Erro ao criar pedido:', err);
       setErro('Erro ao criar pedido.');
@@ -133,7 +152,7 @@ export default function CheckoutPage() {
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="AVISTA" id="avista" />
-              <Label htmlFor="avista">À vista (boleto/manual)</Label>
+              <Label htmlFor="avista">PIX (à vista)</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="PARCELADO" id="parcelado" />
@@ -145,6 +164,27 @@ export default function CheckoutPage() {
             </div>
           </RadioGroup>
         </div>
+
+        {/* Se selecionou 50/50, escolha PIX ou Cartão para a entrada */}
+        {formaPagamento === 'PARCELADO' && (
+          <div>
+            <Label>Como deseja pagar a entrada (50%)?</Label>
+            <RadioGroup
+              value={metodoEntrada}
+              onValueChange={(val) => setMetodoEntrada(val as MetodoEntrada)}
+              className="mt-3 space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="PIX" id="entrada_pix" />
+                <Label htmlFor="entrada_pix">PIX</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="CARTAO" id="entrada_cartao" />
+                <Label htmlFor="entrada_cartao">Cartão</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
 
         {/* Erro */}
         {erro && <p className="text-sm text-red-500">{erro}</p>}

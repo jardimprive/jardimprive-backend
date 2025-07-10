@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+
 const userController = require('../controllers/user.controller');
 const auth = require('../middlewares/auth.middleware');
 const isAdmin = require('../middlewares/isAdmin.middleware'); // ✅ Importado para proteger rota de admin
@@ -29,5 +30,4 @@ router.patch('/admin/sellers/:id/status', auth, isAdmin, userController.updateVe
 // 🔒👑 ADMIN: Ativar vendedora como Líder de Equipe
 router.patch('/admin/ativar-lider/:id', auth, isAdmin, userController.adminAtivarLiderEquipe);
 
-// ✅ CORREÇÃO — exportar o router
 module.exports = router;

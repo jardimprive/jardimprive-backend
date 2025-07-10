@@ -37,6 +37,18 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // ✅ Suporte ao preflight request
+
+// ✅ Middleware para salvar o rawBody nas requisições do Mercado Pago
+app.use(
+  '/api/mercadopago/webhook',
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
+
+// ✅ Middleware padrão para as demais rotas
 app.use(express.json());
 
 // Rotas
@@ -56,10 +68,12 @@ app.use('/api/logins', require('./routes/login.routes'));
 app.use('/profile', profileRoutes);
 app.use('/admin/export', require('./routes/export.routes'));
 app.use('/notifications', require('./routes/notifications.routes'));
-app.use('/admin', require('./routes/admin.routes')); // ✅ Rota de administração (vendedoras)
+app.use('/admin', require('./routes/admin.routes'));
 app.use('/api/hotel', require('./routes/hotel.routes'));
 app.use('/api/leader', leaderRoutes);
-app.use('/leader', teamLeaderRoutes);
+
+// ✅ CORRIGIDO: prefixo único e válido
+app.use('/api/team-leader', teamLeaderRoutes);
 
 app.get('/', (req, res) => {
   res.send('🌸 API Jardim Privé funcionando perfeitamente!');

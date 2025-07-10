@@ -12,8 +12,9 @@ router.post('/agendar', auth, hotelController.agendarDiaria);
 router.get('/minha-diaria', auth, hotelController.verMinhaDiaria);
 
 // ✅ Ver todas as reservas (admin)
-router.get('/admin/todas', auth, isAdmin, hotelController.verTodasAsReservas); // 🔁 nome mais claro
+router.get('/admin/todas', auth, isAdmin, hotelController.verTodasAsReservas);
+
+// ✅ Verifica se vendedora já pode agendar hotel
+router.get('/meta', auth, hotelController.checarMetaHotel); // ✅ MOVIDA PARA CIMA
 
 module.exports = router;
-// ✅ Verifica se vendedora já pode agendar hotel
-router.get('/meta', auth, hotelController.checarMetaHotel);
