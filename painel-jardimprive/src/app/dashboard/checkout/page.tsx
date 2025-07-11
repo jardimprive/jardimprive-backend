@@ -87,7 +87,7 @@ export default function CheckoutPage() {
       }
 
       else if (formaPagamento === 'PARCELADO') {
-        const res = await api.post('/orders/entrada', {
+        const res = await api.post('/orders', {
           ...payload,
           paymentMethod: metodoEntrada,
         });
