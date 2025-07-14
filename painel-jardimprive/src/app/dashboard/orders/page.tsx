@@ -13,6 +13,12 @@ const produtos = [
   { id: "3", nome: "Perfume Secret Garden", preco: 200, variationId: "VARIACAO3" },
 ];
 
+interface Payment {
+  type: string;
+  amount: number;
+  status: string;
+}
+
 interface Order {
   id: string;
   createdAt: string;
@@ -29,6 +35,7 @@ interface Order {
     quantity: number;
     price: number;
   }[];
+  payments?: Payment[];
 }
 
 export default function OrdersPage() {
@@ -38,7 +45,6 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
 
-  // Carregar estado do localStorage ao montar (apenas no cliente)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCart = localStorage.getItem("cart");
@@ -49,7 +55,6 @@ export default function OrdersPage() {
       if (savedPayment) setPaymentMethod(savedPayment);
       if (savedAddress) setAddress(savedAddress);
 
-      // Buscar pedidos
       const fetchOrders = async () => {
         try {
           const res = await api.get("/order");
@@ -65,7 +70,6 @@ export default function OrdersPage() {
     }
   }, []);
 
-  // Salvar no localStorage quando cart, paymentMethod, ou address mudar
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("cart", JSON.stringify(cart));
@@ -132,7 +136,6 @@ export default function OrdersPage() {
       });
 
       if (response.data.checkoutUrl) {
-        // Limpar localStorage após pedido feito
         localStorage.removeItem("cart");
         localStorage.removeItem("paymentMethod");
         localStorage.removeItem("address");
@@ -144,6 +147,24 @@ export default function OrdersPage() {
     } catch (error: any) {
       console.error(error);
       alert(error.response?.data?.error || "Erro ao criar pedido.");
+    }
+  };
+
+  const handlePagarParcelaFinal = async (orderId: string) => {
+    try {
+      const res = await api.post("/order/parcela-final", {
+        orderId,
+        paymentMethod: 'PARCELADO',
+      });
+
+      if (res.data.checkoutUrl) {
+        window.location.href = res.data.checkoutUrl;
+      } else {
+        alert("Erro ao gerar link de pagamento.");
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert(error.response?.data?.error || "Erro ao gerar link de pagamento.");
     }
   };
 
@@ -172,7 +193,6 @@ export default function OrdersPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleRemove(produto.id)}
-                  aria-label={`Remover uma unidade de ${produto.nome}`}
                 >
                   -
                 </Button>
@@ -181,7 +201,6 @@ export default function OrdersPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleAdd(produto.id)}
-                  aria-label={`Adicionar uma unidade de ${produto.nome}`}
                 >
                   +
                 </Button>
@@ -198,7 +217,6 @@ export default function OrdersPage() {
           <Select
             value={paymentMethod}
             onValueChange={setPaymentMethod}
-            aria-label="Forma de pagamento"
           >
             <SelectItem value="AVISTA">À Vista</SelectItem>
             <SelectItem value="PARCELADO">50% Entrada + 50% depois</SelectItem>
@@ -216,7 +234,6 @@ export default function OrdersPage() {
           placeholder="Rua, número, bairro, cidade, complemento..."
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          aria-label="Endereço de entrega"
         />
       </section>
 
@@ -245,6 +262,9 @@ export default function OrdersPage() {
               0
             );
 
+            const parcelaFinal = order.payments?.find(p => p.type === 'PARCELA_FINAL');
+            const podePagarParcela = order.paymentType === 'PARCELADO' && parcelaFinal?.status === 'PENDENTE';
+
             return (
               <Card key={order.id} className="p-4 space-y-3">
                 <div className="flex flex-col sm:flex-row justify-between">
@@ -263,8 +283,7 @@ export default function OrdersPage() {
                 <div className="space-y-1">
                   {order.items.map((item, idx) => (
                     <p key={idx} className="text-sm break-words">
-                      {item.variation.product.name} - {item.variation.size} x{" "}
-                      {item.quantity} (R$ {item.price.toFixed(2)} cada)
+                      {item.variation.product.name} - {item.variation.size} x {item.quantity} (R$ {item.price.toFixed(2)} cada)
                     </p>
                   ))}
                 </div>
@@ -273,6 +292,34 @@ export default function OrdersPage() {
                   <p className="text-sm break-words">
                     Código de rastreio: <b>{order.trackingCode}</b>
                   </p>
+                )}
+
+                {order.payments && order.payments.length > 0 && (
+                  <div className="mt-3 space-y-1 text-sm">
+                    <p className="font-semibold">💳 Pagamentos:</p>
+                    {order.payments.map((payment, i) => (
+                      <p key={i}>
+                        {payment.type === 'PARCELA_ENTRADA' && 'Entrada:'}
+                        {payment.type === 'PARCELA_FINAL' && 'Parcela Final:'}
+                        {payment.type === 'AVISTA' && 'À Vista:'}
+                        {' '}
+                        <span className={payment.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}>
+                          {payment.status === 'PAGO' ? '✅ Pago' : '❌ Pendente'}
+                        </span>{' '}
+                        - R$ {payment.amount.toFixed(2)}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {podePagarParcela && (
+                  <Button
+                    className="mt-2"
+                    variant="default"
+                    onClick={() => handlePagarParcelaFinal(order.id)}
+                  >
+                    Pagar parcela final
+                  </Button>
                 )}
               </Card>
             );
