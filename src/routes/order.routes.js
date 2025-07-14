@@ -16,6 +16,9 @@ router.post('/checkout', auth, orderController.createOrderWithCheckout);
 // 🔐 Vendedora: gerar link de pagamento via PIX
 router.post('/pix', auth, orderController.createOrderPix);
 
+// ✅ 🔐 Vendedora: gerar link de pagamento da parcela final
+router.post('/parcela-final', auth, orderController.createOrderFinal);
+
 // 🔴 Admin: ver todos os pedidos
 router.get('/', auth, isAdmin, orderController.getAllOrders);
 

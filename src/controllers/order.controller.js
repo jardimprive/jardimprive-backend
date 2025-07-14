@@ -88,17 +88,28 @@ exports.createOrder = async (req, res) => {
 };
 
 exports.getAllOrders = async (req, res) => {
-  const orders = await prisma.order.findMany({
-    where: { userId: req.user.id },
-    include: {
-      items: {
-        include: {
-          variation: true,
+  try {
+    const orders = await prisma.order.findMany({
+      where: { userId: req.user.id },
+      include: {
+        items: {
+          include: {
+            variation: {
+              include: {
+                product: true,
+              },
+            },
+          },
         },
+        payments: true,
       },
-    },
-  });
-  res.json(orders);
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar pedidos', details: error.message });
+  }
 };
 
 exports.getOrderById = async (req, res) => {
@@ -476,6 +487,7 @@ exports.createOrderEntrada = async (req, res) => {
     res.status(500).json({ error: 'Erro ao criar pedido 50/50', details: error.message });
   }
 };
+
 exports.createOrderFinal = async (req, res) => {
   const { orderId, paymentMethod } = req.body;
 
