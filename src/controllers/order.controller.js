@@ -1,4 +1,3 @@
-// order.controller.js
 const prisma = require('../config/prisma');
 const dayjs = require('dayjs');
 const checkInadimplencia = require('../utils/checkInadimplencia');
@@ -21,16 +20,27 @@ exports.createOrder = async (req, res) => {
       });
     }
 
+    // VALIDAÇÃO DE PREÇOS VINDOS DO BANCO
+    const validatedItems = await Promise.all(
+      items.map(async (item) => {
+        const variation = await prisma.productVariation.findUnique({
+          where: { id: item.variationId },
+        });
+        if (!variation) throw new Error('Produto não encontrado');
+        return {
+          variationId: item.variationId,
+          quantity: item.quantity,
+          price: variation.price,
+        };
+      })
+    );
+
     const order = await prisma.order.create({
       data: {
         userId: req.user.id,
         paymentType,
         items: {
-          create: items.map((item) => ({
-            variationId: item.variationId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
+          create: validatedItems,
         },
       },
       include: {
@@ -213,6 +223,7 @@ exports.createOrderWithCheckout = async (req, res) => {
       return res.status(403).json({ error: 'Você está bloqueado por inadimplência. Quite seus pagamentos.' });
     }
 
+    // VALIDAÇÃO DE PREÇOS VINDOS DO BANCO
     const mpItems = await Promise.all(
       items.map(async (item) => {
         const variation = await prisma.productVariation.findUnique({
@@ -232,16 +243,29 @@ exports.createOrderWithCheckout = async (req, res) => {
     const total = mpItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
     const entrada = total * 0.5;
 
+    // CRIAÇÃO DOS ITENS DO PEDIDO USANDO PREÇOS VALIDADOS
+    const validatedItems = mpItems.map(mpItem => ({
+      variationId: items.find(i => i.variationId === mpItem.title.split(' - ')[1])?.variationId || null,
+      quantity: mpItem.quantity,
+      price: mpItem.unit_price,
+    }));
+
+    // Melhor forma (melhor garantir pelo índice)
+    const validatedItemsForOrder = items.map(item => {
+      const variation = mpItems.find(mp => mp.title.includes(item.variationId)); 
+      return {
+        variationId: item.variationId,
+        quantity: item.quantity,
+        price: mpItems.find(mp => mp.title.includes(item.variationId))?.unit_price || 0,
+      }
+    });
+
     const order = await prisma.order.create({
       data: {
         userId: req.user.id,
         paymentType: paymentMethod,
         items: {
-          create: items.map((item) => ({
-            variationId: item.variationId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
+          create: validatedItemsForOrder,
         },
       },
     });
@@ -330,6 +354,7 @@ exports.createOrderPix = async (req, res) => {
           include: { product: true },
         });
         if (!variation) throw new Error('Produto não encontrado');
+
         return {
           title: `${variation.product.name} - ${variation.size}`,
           quantity: item.quantity,
@@ -339,132 +364,48 @@ exports.createOrderPix = async (req, res) => {
       })
     );
 
-    const preference = {
-      items: mpItems,
-      back_urls: {
-        success: process.env.MP_SUCCESS_URL,
-        failure: process.env.MP_FAILURE_URL,
-        pending: process.env.MP_PENDING_URL,
-      },
-      auto_return: 'approved',
-      metadata: {
-        userId: req.user.id,
-        paymentType: 'AVISTA',
-      },
-    };
+    const total = mpItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
 
-    const result = await mercadopago.preferences.create(preference);
-    res.status(200).json({ checkoutUrl: result.body.init_point });
-  } catch (error) {
-    console.error('Erro ao criar link PIX:', error);
-    res.status(500).json({ error: 'Erro ao gerar link de pagamento PIX', details: error.message });
-  }
-};
-
-exports.getAllOrdersAdmin = async (req, res) => {
-  try {
-    const { startDate, endDate, status, paymentType } = req.query;
-    const where = {};
-
-    if (status) where.status = status;
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = new Date(startDate);
-      if (endDate) where.createdAt.lte = new Date(endDate);
-    }
-    if (paymentType) where.paymentType = paymentType;
-
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        items: {
-          include: {
-            variation: { include: { product: true } },
-          },
-        },
-        payments: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar pedidos com filtros', details: error.message });
-  }
-};
-
-exports.createOrderEntrada = async (req, res) => {
-  const { items, address, paymentMethod } = req.body;
-
-  if (!items || !address || !paymentMethod) {
-    return res.status(400).json({ error: 'Dados incompletos' });
-  }
-
-  try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-
-    if (!user || user.isBlocked) {
-      return res.status(403).json({ error: 'Usuário bloqueado por inadimplência' });
-    }
-
-    const produtos = await Promise.all(
+    const orderItems = await Promise.all(
       items.map(async (item) => {
         const variation = await prisma.productVariation.findUnique({
           where: { id: item.variationId },
-          include: { product: true },
         });
         if (!variation) throw new Error('Produto não encontrado');
-        return { variation, quantity: item.quantity };
+
+        return {
+          variationId: item.variationId,
+          quantity: item.quantity,
+          price: variation.price,
+        };
       })
     );
-
-    const total = produtos.reduce((acc, { variation, quantity }) => acc + variation.price * quantity, 0);
-    const entrada = total * 0.5;
-    const restante = total - entrada;
 
     const order = await prisma.order.create({
       data: {
         userId: req.user.id,
-        paymentType: 'PARCELADO',
+        paymentType: 'PIX',
         items: {
-          create: items.map((item) => ({
-            variationId: item.variationId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
+          create: orderItems,
         },
       },
     });
 
-    await prisma.payment.createMany({
-      data: [
-        {
-          orderId: order.id,
-          type: 'PARCELA_ENTRADA',
-          amount: entrada,
-          dueDate: dayjs().toDate(),
-          status: 'PENDENTE',
-        },
-        {
-          orderId: order.id,
-          type: 'PARCELA_FINAL',
-          amount: restante,
-          dueDate: dayjs().add(30, 'day').toDate(),
-          status: 'PENDENTE',
-        },
-      ],
+    await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        type: 'PIX',
+        amount: total,
+        dueDate: dayjs().toDate(),
+        status: 'PENDENTE',
+      },
     });
 
     const preference = {
-      items: [
-        {
-          title: `Entrada do pedido #${order.id}`,
-          quantity: 1,
-          unit_price: entrada,
-          currency_id: 'BRL',
-        },
-      ],
+      items: mpItems,
+      payment_methods: {
+        excluded_payment_types: [{ id: 'credit_card' }, { id: 'ticket' }],
+      },
       back_urls: {
         success: process.env.MP_SUCCESS_URL,
         failure: process.env.MP_FAILURE_URL,
@@ -474,7 +415,7 @@ exports.createOrderEntrada = async (req, res) => {
       metadata: {
         userId: req.user.id,
         orderId: order.id,
-        paymentType: 'PARCELADO',
+        paymentType: 'PIX',
       },
       external_reference: String(order.id),
     };
@@ -483,28 +424,18 @@ exports.createOrderEntrada = async (req, res) => {
 
     res.status(200).json({ checkoutUrl: result.body.init_point });
   } catch (error) {
-    console.error('Erro no pedido 50/50:', error);
-    res.status(500).json({ error: 'Erro ao criar pedido 50/50', details: error.message });
+    console.error('Erro no checkout PIX:', error);
+    res.status(500).json({ error: 'Erro ao criar link PIX', details: error.message });
   }
 };
 
 exports.createOrderFinal = async (req, res) => {
-  const { orderId, paymentMethod } = req.body;
-
-  if (!orderId || !paymentMethod) {
-    return res.status(400).json({ error: 'Dados incompletos' });
-  }
+  const { id } = req.params;
 
   try {
     const order = await prisma.order.findUnique({
-      where: { id: orderId },
+      where: { id },
       include: {
-        user: true,
-        items: {
-          include: {
-            variation: { include: { product: true } },
-          },
-        },
         payments: true,
       },
     });
@@ -513,24 +444,16 @@ exports.createOrderFinal = async (req, res) => {
       return res.status(404).json({ error: 'Pedido não encontrado' });
     }
 
-    const user = order.user;
-    if (!user || user.isBlocked) {
-      return res.status(403).json({ error: 'Usuário bloqueado por inadimplência' });
-    }
+    const parcelaFinal = order.payments.find((p) => p.type === 'PARCELA_FINAL');
 
-    const parcelaFinal = order.payments.find(p => p.type === 'PARCELA_FINAL');
     if (!parcelaFinal) {
       return res.status(400).json({ error: 'Parcela final não encontrada para este pedido' });
-    }
-
-    if (parcelaFinal.status === 'PAGO') {
-      return res.status(400).json({ error: 'Parcela final já está paga' });
     }
 
     const preference = {
       items: [
         {
-          title: `Parcela Final do pedido #${order.id}`,
+          title: `Parcela final do pedido #${order.id}`,
           quantity: 1,
           unit_price: parcelaFinal.amount,
           currency_id: 'BRL',
@@ -543,17 +466,18 @@ exports.createOrderFinal = async (req, res) => {
       },
       auto_return: 'approved',
       metadata: {
-        userId: user.id,
+        userId: order.userId,
         orderId: order.id,
-        paymentType: 'PARCELADO',
+        paymentType: 'PARCELA_FINAL',
       },
       external_reference: String(order.id),
     };
 
     const result = await mercadopago.preferences.create(preference);
+
     res.status(200).json({ checkoutUrl: result.body.init_point });
   } catch (error) {
-    console.error('Erro ao gerar link da parcela final:', error);
-    res.status(500).json({ error: 'Erro ao gerar pagamento da parcela final', details: error.message });
+    console.error('Erro no checkout parcela final:', error);
+    res.status(500).json({ error: 'Erro ao criar link de pagamento final', details: error.message });
   }
 };
