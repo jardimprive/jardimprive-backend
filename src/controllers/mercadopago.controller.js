@@ -2,10 +2,10 @@ const crypto = require('crypto');
 const prisma = require('../config/prisma');
 const checkBonus = require('../utils/checkBonus');
 
-// ⚠️ NOVA função para validar assinatura do Mercado Pago
+// ✅ Corrigido: header correto do Mercado Pago
 function isValidSignature(req) {
   const secret = process.env.MP_WEBHOOK_SECRET;
-  const signature = req.headers['x-signature'];
+  const signature = req.headers['x-signature-id']; // <-- CORRIGIDO AQUI
   const hash = crypto.createHmac('sha256', secret).update(req.rawBody).digest('hex');
   return signature === hash;
 }

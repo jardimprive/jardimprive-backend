@@ -15,6 +15,13 @@ const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
 const leaderRoutes = require('./routes/leader.routes');
 const teamLeaderRoutes = require('./routes/teamLeader.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
+const loginRoutes = require('./routes/login.routes');
+const exportRoutes = require('./routes/export.routes');
+const adminRoutes = require('./routes/admin.routes');
+const hotelRoutes = require('./routes/hotel.routes');
+const metaRoutes = require('./routes/meta.routes');
+const notificationRoutes = require('./routes/notifications.routes');
 
 const app = express();
 
@@ -23,8 +30,7 @@ const allowedOrigins = process.env.CORS_ORIGINS?.split(',') || [];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Permite chamadas sem origin (ex: Postman)
-
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -36,9 +42,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // ✅ Suporte ao preflight request
+app.options('*', cors(corsOptions));
 
-// ✅ Middleware para salvar o rawBody nas requisições do Mercado Pago
+// ✅ Middleware para rawBody no webhook
 app.use(
   '/api/mercadopago/webhook',
   express.json({
@@ -48,10 +54,10 @@ app.use(
   })
 );
 
-// ✅ Middleware padrão para as demais rotas
+// ✅ Middleware padrão
 app.use(express.json());
 
-// Rotas
+// ✅ ROTAS COM PREFIXO CONSISTENTE
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/variations', variationRoutes);
@@ -59,20 +65,18 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/bonuses', bonusRoutes);
-app.use('/api/commissions', commissionRoutes);
-app.use('/dashboard', require('./routes/dashboard.routes'));
+app.use('/api/commission', commissionRoutes); // 🔧 CORRIGIDO
+app.use('/api/notifications', notificationRoutes); // 🔧 CORRIGIDO
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/mercadopago', mpRoutes);
-app.use('/api/meta', require('./routes/meta.routes'));
+app.use('/api/meta', metaRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/logins', require('./routes/login.routes'));
-app.use('/profile', profileRoutes);
-app.use('/admin/export', require('./routes/export.routes'));
-app.use('/notifications', require('./routes/notifications.routes'));
-app.use('/admin', require('./routes/admin.routes'));
-app.use('/api/hotel', require('./routes/hotel.routes'));
+app.use('/api/login', loginRoutes); // 🔧 renomeado (era plural)
+app.use('/api/profile', profileRoutes); // 🔧 CORRIGIDO
+app.use('/api/export', exportRoutes); // 🔧 CORRIGIDO
+app.use('/api/admin', adminRoutes); // 🔧 CORRIGIDO
+app.use('/api/hotel', hotelRoutes);
 app.use('/api/leader', leaderRoutes);
-
-// ✅ CORRIGIDO: prefixo único e válido
 app.use('/api/team-leader', teamLeaderRoutes);
 
 app.get('/', (req, res) => {
