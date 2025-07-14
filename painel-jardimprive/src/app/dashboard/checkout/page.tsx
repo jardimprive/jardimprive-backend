@@ -67,6 +67,7 @@ export default function CheckoutPage() {
         const res = await api.post('/orders/checkout', {
           ...payload,
           paymentMethod: 'CARTAO',
+          paymentType: 'CARTAO',
         });
         if (res.data.checkoutUrl) {
           localStorage.removeItem('carrinho');
@@ -77,7 +78,11 @@ export default function CheckoutPage() {
       }
 
       else if (formaPagamento === 'AVISTA') {
-        const res = await api.post('/orders/pix', payload);
+        const res = await api.post('/orders/pix', {
+          ...payload,
+          paymentMethod: 'PIX',
+          paymentType: 'AVISTA',
+        });
         if (res.data.checkoutUrl) {
           localStorage.removeItem('carrinho');
           window.location.href = res.data.checkoutUrl;
@@ -89,6 +94,7 @@ export default function CheckoutPage() {
       else if (formaPagamento === 'PARCELADO') {
         const res = await api.post('/orders', {
           ...payload,
+          paymentType: 'PARCELADO',
           paymentMethod: metodoEntrada,
         });
 
@@ -115,7 +121,6 @@ export default function CheckoutPage() {
       </CardHeader>
 
       <CardContent className="space-y-6 px-4 sm:px-6 md:px-8">
-        {/* ✅ Itens do carrinho */}
         <div className="space-y-2">
           <h2 className="font-semibold">Itens no Carrinho:</h2>
           <ul className="space-y-1 text-sm">
@@ -131,7 +136,6 @@ export default function CheckoutPage() {
           </p>
         </div>
 
-        {/* 🏠 Endereço */}
         <div>
           <Label htmlFor="endereco">Endereço de Entrega</Label>
           <Input
@@ -142,7 +146,6 @@ export default function CheckoutPage() {
           />
         </div>
 
-        {/* 💳 Forma de pagamento */}
         <div>
           <Label>Forma de Pagamento</Label>
           <RadioGroup
@@ -165,7 +168,6 @@ export default function CheckoutPage() {
           </RadioGroup>
         </div>
 
-        {/* Se selecionou 50/50, escolha PIX ou Cartão para a entrada */}
         {formaPagamento === 'PARCELADO' && (
           <div>
             <Label>Como deseja pagar a entrada (50%)?</Label>
@@ -186,7 +188,6 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Erro */}
         {erro && <p className="text-sm text-red-500">{erro}</p>}
 
         <Button
