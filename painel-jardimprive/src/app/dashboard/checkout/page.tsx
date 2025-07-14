@@ -75,9 +75,7 @@ export default function CheckoutPage() {
         } else {
           setErro('Erro ao gerar link de pagamento.');
         }
-      }
-
-      else if (formaPagamento === 'AVISTA') {
+      } else if (formaPagamento === 'AVISTA') {
         const res = await api.post('/orders/pix', {
           ...payload,
           paymentMethod: 'PIX',
@@ -89,13 +87,12 @@ export default function CheckoutPage() {
         } else {
           setErro('Erro ao gerar QR Code PIX.');
         }
-      }
-
-      else if (formaPagamento === 'PARCELADO') {
+      } else if (formaPagamento === 'PARCELADO') {
         const res = await api.post('/orders', {
           ...payload,
           paymentType: 'PARCELADO',
           paymentMethod: metodoEntrada,
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Data daqui a 30 dias
         });
 
         if (res.data.checkoutUrl) {
@@ -105,7 +102,6 @@ export default function CheckoutPage() {
           setErro('Erro ao gerar link de entrada parcelada.');
         }
       }
-
     } catch (err) {
       console.error('Erro ao criar pedido:', err);
       setErro('Erro ao criar pedido.');
