@@ -129,7 +129,7 @@ export default function OrdersPage() {
         };
       });
 
-      const response = await api.post("/order/checkout", {
+      const response = await api.post("/order/entrada", {
         items,
         paymentMethod,
         address,
