@@ -31,4 +31,6 @@ router.put('/:id', auth, isAdmin, orderController.updateOrderStatus);
 // 🔴 Admin: deletar pedido
 router.delete('/:id', auth, isAdmin, orderController.deleteOrder);
 
+router.get('/:orderId/checkout', orderController.getCheckoutLink);
+
 module.exports = router;

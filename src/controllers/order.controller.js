@@ -318,6 +318,17 @@ exports.createOrderWithCheckout = async (req, res) => {
 
     const result = await mercadopago.preferences.create(preference);
 
+    // Atualiza o link de pagamento da entrada no banco
+    await prisma.payment.updateMany({
+      where: {
+        orderId: order.id,
+        type: 'PARCELA_ENTRADA',
+      },
+      data: {
+        linkPagamento: result.body.init_point,
+      },
+    });
+
     res.status(200).json({ checkoutUrl: result.body.init_point });
   } catch (error) {
     console.error('Erro no checkout:', error);
@@ -471,5 +482,28 @@ exports.createOrderFinal = async (req, res) => {
   } catch (error) {
     console.error('Erro no checkout parcela final:', error);
     res.status(500).json({ error: 'Erro ao criar link de pagamento final', details: error.message });
+  }
+};
+
+// ✅ NOVO ENDPOINT PARA PEGAR LINK DA ENTRADA
+exports.getCheckoutLink = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const payment = await prisma.payment.findFirst({
+      where: {
+        orderId,
+        type: 'PARCELA_ENTRADA',
+      },
+    });
+
+    if (!payment || !payment.linkPagamento) {
+      return res.status(404).json({ error: 'Pagamento de entrada não encontrado ou sem link' });
+    }
+
+    return res.json({ link: payment.linkPagamento });
+  } catch (error) {
+    console.error('Erro ao recuperar link de checkout:', error);
+    res.status(500).json({ error: 'Erro interno ao buscar link' });
   }
 };
