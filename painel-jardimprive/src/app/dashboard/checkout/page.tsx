@@ -92,7 +92,7 @@ export default function CheckoutPage() {
           ...payload,
           paymentType: 'PARCELADO',
           paymentMethod: metodoEntrada,
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Data daqui a 30 dias
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Data daqui a 30 dias
         });
 
         if (res.data.checkoutUrl) {

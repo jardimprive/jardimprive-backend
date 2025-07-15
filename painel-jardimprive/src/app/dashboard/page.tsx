@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import api from '@/lib/api';
+import NotificationList from '@/components/NotificationList'; // ✅ Adicionado
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -42,7 +44,7 @@ export default function DashboardPage() {
       if (role === 'VENDEDORA') {
         const [commRes, bonusRes, withdrawRes, paymentRes] = await Promise.all([
           api.get('/commission/me'),
-          api.get('/bonuses/me'), // ✅ corrigido
+          api.get('/bonuses/me'),
           api.get('/withdrawals/me'),
           api.get('/payments'),
         ]);
@@ -62,7 +64,7 @@ export default function DashboardPage() {
         const summaryRes = await api.get('/dashboard/summary');
         setSummary(summaryRes.data);
 
-        const metaRes = await api.get('/bonuses/progress'); // ✅ corrigido
+        const metaRes = await api.get('/bonuses/progress');
         setMeta(metaRes.data);
       }
 
@@ -125,6 +127,8 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full max-w-screen px-4 sm:px-6 space-y-6 overflow-x-hidden">
+      <NotificationList /> {/* ✅ Componente de notificações */}
+
       {userRole === 'VENDEDORA' && (
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
