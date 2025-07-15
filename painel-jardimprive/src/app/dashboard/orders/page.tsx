@@ -57,7 +57,7 @@ export default function OrdersPage() {
 
       const fetchOrders = async () => {
         try {
-          const res = await api.get("/order");
+          const res = await api.get("/orders");
           setOrders(res.data);
         } catch (error) {
           console.error("Erro ao buscar pedidos:", error);
@@ -129,11 +129,18 @@ export default function OrdersPage() {
         };
       });
 
-      const response = await api.post("/order/entrada", {
+      const payload: any = {
         items,
         paymentMethod,
         address,
-      });
+      };
+
+      // Se o pagamento for parcelado, envie a dueDate
+      if (paymentMethod === "PARCELADO") {
+        payload.dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 dias de prazo
+      }
+
+      const response = await api.post("/orders", payload);  // Corrigido para /orders
 
       if (response.data.checkoutUrl) {
         localStorage.removeItem("cart");
@@ -152,7 +159,7 @@ export default function OrdersPage() {
 
   const handlePagarParcelaFinal = async (orderId: string) => {
     try {
-      const res = await api.post("/order/parcela-final", {
+      const res = await api.post("/orders/parcela-final", {  // Corrigido para /orders
         orderId,
         paymentMethod: 'PARCELADO',
       });

@@ -7,17 +7,14 @@ const isAdmin = require('../middlewares/isAdmin.middleware');
 // 🔐 Vendedora: criar pedido (usado para parcelado no sistema)
 router.post('/', auth, orderController.createOrder);
 
-// 🔐 Vendedora: criar pedido com entrada via Mercado Pago (PIX ou Cartão)
-router.post('/entrada', auth, orderController.createOrderEntrada);
-
-// 🔐 Vendedora: gerar link de pagamento Mercado Pago (cartão)
+// 🔐 Vendedora: gerar link de pagamento Mercado Pago (entrada via cartão)
 router.post('/checkout', auth, orderController.createOrderWithCheckout);
 
 // 🔐 Vendedora: gerar link de pagamento via PIX
 router.post('/pix', auth, orderController.createOrderPix);
 
-// ✅ 🔐 Vendedora: gerar link de pagamento da parcela final
-router.post('/parcela-final', auth, orderController.createOrderFinal);
+// ✅ 🔐 Vendedora: gerar link de pagamento da parcela final (precisa do ID do pedido)
+router.post('/parcela-final/:id', auth, orderController.createOrderFinal);
 
 // 🔴 Admin: ver todos os pedidos
 router.get('/', auth, isAdmin, orderController.getAllOrders);

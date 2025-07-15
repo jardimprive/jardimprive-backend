@@ -20,7 +20,6 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    // VALIDAÇÃO DE PREÇOS VINDOS DO BANCO
     const validatedItems = await Promise.all(
       items.map(async (item) => {
         const variation = await prisma.productVariation.findUnique({
@@ -223,7 +222,6 @@ exports.createOrderWithCheckout = async (req, res) => {
       return res.status(403).json({ error: 'Você está bloqueado por inadimplência. Quite seus pagamentos.' });
     }
 
-    // VALIDAÇÃO DE PREÇOS VINDOS DO BANCO
     const mpItems = await Promise.all(
       items.map(async (item) => {
         const variation = await prisma.productVariation.findUnique({
@@ -243,21 +241,13 @@ exports.createOrderWithCheckout = async (req, res) => {
     const total = mpItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
     const entrada = total * 0.5;
 
-    // CRIAÇÃO DOS ITENS DO PEDIDO USANDO PREÇOS VALIDADOS
-    const validatedItems = mpItems.map(mpItem => ({
-      variationId: items.find(i => i.variationId === mpItem.title.split(' - ')[1])?.variationId || null,
-      quantity: mpItem.quantity,
-      price: mpItem.unit_price,
-    }));
-
-    // Melhor forma (melhor garantir pelo índice)
     const validatedItemsForOrder = items.map(item => {
-      const variation = mpItems.find(mp => mp.title.includes(item.variationId)); 
+      const variation = mpItems.find(mp => mp.title.includes(item.variationId));
       return {
         variationId: item.variationId,
         quantity: item.quantity,
-        price: mpItems.find(mp => mp.title.includes(item.variationId))?.unit_price || 0,
-      }
+        price: variation?.unit_price || 0,
+      };
     });
 
     const order = await prisma.order.create({
