@@ -92,13 +92,26 @@ export default function CheckoutPage() {
           ...payload,
           paymentType: 'PARCELADO',
           paymentMethod: metodoEntrada,
-          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Data daqui a 30 dias
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         });
 
-        if (res.data.checkoutUrl) {
-          localStorage.removeItem('carrinho');
-          window.location.href = res.data.checkoutUrl;
-        } else {
+        const orderId = res.data?.order?.id || res.data?.id;
+        if (!orderId) {
+          setErro('Erro ao criar pedido parcelado.');
+          return;
+        }
+
+        try {
+          const linkRes = await api.get(`/orders/${orderId}/checkout`);
+
+          if (linkRes.data?.checkoutUrl) {
+            localStorage.removeItem('carrinho');
+            window.location.href = linkRes.data.checkoutUrl;
+          } else {
+            setErro('Erro ao gerar link de entrada parcelada.');
+          }
+        } catch (err) {
+          console.error('Erro ao gerar link parcelado:', err);
           setErro('Erro ao gerar link de entrada parcelada.');
         }
       }

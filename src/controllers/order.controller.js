@@ -226,7 +226,7 @@ exports.createOrderWithCheckout = async (req, res) => {
       return res.status(403).json({ error: 'Você está bloqueado por inadimplência. Quite seus pagamentos.' });
     }
 
-    const mpItems = await Promise.all(
+    const variationData = await Promise.all(
       items.map(async (item) => {
         const variation = await prisma.productVariation.findUnique({
           where: { id: item.variationId },
@@ -234,6 +234,7 @@ exports.createOrderWithCheckout = async (req, res) => {
         });
         if (!variation) throw new Error('Produto não encontrado');
         return {
+          id: item.variationId,
           title: `${variation.product.name} - ${variation.size}`,
           quantity: item.quantity,
           unit_price: variation.price,
@@ -242,16 +243,14 @@ exports.createOrderWithCheckout = async (req, res) => {
       })
     );
 
-    const total = mpItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+    const total = variationData.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
     const entrada = total * 0.5;
 
-    const validatedItemsForOrder = items.map(item => {
-      return {
-        variationId: item.variationId,
-        quantity: item.quantity,
-        price: mpItems.find(mp => mp.title.includes(item.variationId))?.unit_price || 0,
-      };
-    });
+    const validatedItemsForOrder = variationData.map((v) => ({
+      variationId: v.id,
+      quantity: v.quantity,
+      price: v.unit_price,
+    }));
 
     const order = await prisma.order.create({
       data: {
