@@ -57,8 +57,7 @@ exports.getLiderDashboard = async (req, res) => {
 
     const minhasVendedoras = Object.values(totalVendasPorVendedora);
 
-    const percentual =
-      ultimosPedidos.length >= 100 ? 10 : 7;
+    const percentual = ultimosPedidos.length >= 100 ? 10 : 7;
 
     const comissaoEstimativa = (totalVendas * percentual) / 100;
 

@@ -2,20 +2,33 @@ const prisma = require('../config/prisma');
 
 // ✅ Vendedora: listar suas comissões
 exports.getMyCommissions = async (req, res) => {
-  const commissions = await prisma.commission.findMany({
-    where: { userId: req.user.id },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json(commissions);
+  try {
+    const commissions = await prisma.commission.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(commissions);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar comissões', details: error.message });
+  }
 };
 
 // ✅ Admin: listar todas as comissões
 exports.getAllCommissions = async (req, res) => {
-  const commissions = await prisma.commission.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { user: true, order: true },
-  });
-  res.json(commissions);
+  try {
+    const commissions = await prisma.commission.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: true,
+        order: true,
+      },
+    });
+
+    res.json(commissions);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar comissões', details: error.message });
+  }
 };
 
 // ✅ Admin: atualizar status da comissão (ex: PENDENTE → PAGA)

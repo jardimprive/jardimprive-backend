@@ -9,15 +9,21 @@ exports.getNotifications = async (req, res) => {
 
     const notifications = [];
 
-    // 🔴 Bloqueado por inadimplência
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // 🚫 Notificação de bloqueio
     if (user.isBlocked) {
       notifications.push({
         type: 'error',
+        title: 'Conta bloqueada',
+        icon: '🚫',
         message: 'Você está inadimplente. Quite seus pagamentos para desbloquear novos pedidos.',
       });
     }
 
-    // 🟢 Admin: ver se há saques pendentes
+    // 👑 Notificações para ADMIN
     if (user.role === 'ADMIN') {
       const saquesPendentes = await prisma.withdrawalRequest.count({
         where: { status: 'PENDENTE' },
@@ -26,39 +32,47 @@ exports.getNotifications = async (req, res) => {
       if (saquesPendentes > 0) {
         notifications.push({
           type: 'info',
+          title: 'Saques pendentes',
+          icon: '📥',
           message: `Você tem ${saquesPendentes} solicitações de saque pendentes para analisar.`,
         });
       }
     }
 
-    // 🟨 Bônus pendentes
+    // 👩‍💼 Notificações para VENDEDORA
     if (user.role === 'VENDEDORA') {
       const bonusPendentes = await prisma.bonus.count({
-        where: { userId: user.id, status: 'PENDENTE' },
+        where: {
+          userId: user.id,
+          status: 'PENDENTE',
+        },
       });
 
       if (bonusPendentes > 0) {
         notifications.push({
           type: 'info',
+          title: 'Bônus pendente',
+          icon: '💰',
           message: `Você tem ${bonusPendentes} bônus aguardando pagamento.`,
         });
       }
-    }
 
-    // 🏆 Metas atingidas
-    if (user.role === 'VENDEDORA') {
       const tresMesesAtras = dayjs().subtract(3, 'month').toDate();
 
       const vendasValidas = await prisma.order.findMany({
         where: {
           userId: user.id,
           status: 'ENTREGUE',
-          createdAt: { gte: tresMesesAtras },
+          createdAt: {
+            gte: tresMesesAtras,
+          },
           items: {
             some: {},
           },
         },
-        include: { items: true },
+        include: {
+          items: true,
+        },
       });
 
       const vendasMinimas = vendasValidas.filter((pedido) => {
@@ -67,13 +81,15 @@ exports.getNotifications = async (req, res) => {
       });
 
       const totalValidas = vendasMinimas.length;
-
       const metas = [10, 20, 30, 40, 50, 60];
-      metas.forEach((m) => {
-        if (totalValidas >= m) {
+
+      metas.forEach((meta) => {
+        if (totalValidas >= meta) {
           notifications.push({
             type: 'success',
-            message: `Parabéns! Você atingiu a meta de ${m} vendas com pedidos acima de R$250.`,
+            title: `Meta ${meta} atingida`,
+            icon: '🏆',
+            message: `Parabéns! Você atingiu a meta de ${meta} vendas com pedidos acima de R$250.`,
           });
         }
       });
@@ -82,6 +98,9 @@ exports.getNotifications = async (req, res) => {
     res.json(notifications);
   } catch (error) {
     console.error('Erro ao buscar notificações:', error);
-    res.status(500).json({ error: 'Erro ao buscar notificações', details: error.message });
+    res.status(500).json({
+      error: 'Erro ao buscar notificações',
+      details: error.message,
+    });
   }
 };

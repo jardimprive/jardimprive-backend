@@ -52,7 +52,6 @@ exports.createOrder = async (req, res) => {
     });
 
     const total = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
     const payments = [];
 
     if (paymentType === 'AVISTA' || paymentType === 'CARTAO') {
@@ -151,13 +150,18 @@ exports.updateOrderStatus = async (req, res) => {
         trackingCode,
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            teamLeaderId: true,
+          },
+        },
         items: true,
       },
     });
 
     if (status === 'ENTREGUE') {
-      await checkBonus(order.userId);
+      await checkBonus(order.user.id);
 
       if (order.user.teamLeaderId) {
         const teamLeaderId = order.user.teamLeaderId;
@@ -209,10 +213,10 @@ exports.deleteOrder = async (req, res) => {
 };
 
 exports.createOrderWithCheckout = async (req, res) => {
-  const { items, address, paymentMethod, dueDate } = req.body;
+  const { items, address, paymentMethod, paymentType, dueDate } = req.body;
 
-  if (!items || !address || !paymentMethod) {
-    return res.status(400).json({ error: 'Preencha todos os campos' });
+  if (!items || !address || !paymentMethod || !paymentType) {
+    return res.status(400).json({ error: 'Preencha todos os campos obrigatórios' });
   }
 
   try {
@@ -242,18 +246,17 @@ exports.createOrderWithCheckout = async (req, res) => {
     const entrada = total * 0.5;
 
     const validatedItemsForOrder = items.map(item => {
-      const variation = mpItems.find(mp => mp.title.includes(item.variationId));
       return {
         variationId: item.variationId,
         quantity: item.quantity,
-        price: variation?.unit_price || 0,
+        price: mpItems.find(mp => mp.title.includes(item.variationId))?.unit_price || 0,
       };
     });
 
     const order = await prisma.order.create({
       data: {
         userId: req.user.id,
-        paymentType: paymentMethod,
+        paymentType,
         items: {
           create: validatedItemsForOrder,
         },
@@ -262,7 +265,7 @@ exports.createOrderWithCheckout = async (req, res) => {
 
     const payments = [];
 
-    if (paymentMethod === 'PARCELADO') {
+    if (paymentType === 'PARCELADO') {
       payments.push(
         {
           orderId: order.id,
@@ -309,7 +312,7 @@ exports.createOrderWithCheckout = async (req, res) => {
       metadata: {
         userId: req.user.id,
         orderId: order.id,
-        paymentType: paymentMethod,
+        paymentType,
       },
       external_reference: String(order.id),
     };
