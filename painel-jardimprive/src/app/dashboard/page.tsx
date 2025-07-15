@@ -42,7 +42,7 @@ export default function DashboardPage() {
       if (role === 'VENDEDORA') {
         const [commRes, bonusRes, withdrawRes, paymentRes] = await Promise.all([
           api.get('/commission/me'),
-          api.get('/bonus/me'),
+          api.get('/bonuses/me'), // ✅ corrigido
           api.get('/withdrawals/me'),
           api.get('/payments'),
         ]);
@@ -59,10 +59,10 @@ export default function DashboardPage() {
         const pendings = Array.isArray(paymentRes.data) ? paymentRes.data : [];
         setPendingPayments(pendings.filter((p: any) => p.status !== 'PAGO').reduce((acc, item) => acc + item.amount, 0));
 
-        const summaryRes = await api.get('/dashboard/summary'); // já corrigido (rota no backend virou /api/dashboard)
+        const summaryRes = await api.get('/dashboard/summary');
         setSummary(summaryRes.data);
 
-        const metaRes = await api.get('/bonus/progress');
+        const metaRes = await api.get('/bonuses/progress'); // ✅ corrigido
         setMeta(metaRes.data);
       }
 
