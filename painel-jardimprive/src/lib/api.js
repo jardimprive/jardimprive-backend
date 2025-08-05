@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://jardimprive-backend.onrender.com/',
+  baseURL: 'https://jardimprive-backend.onrender.com/api',
 })
 
 // Adiciona token automaticamente nas requisições (client-side)
