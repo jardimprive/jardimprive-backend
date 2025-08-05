@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: '🛒 Carrinho', href: '/dashboard/carrinho' },
     { label: '🎁 Bônus', href: '/dashboard/bonus' },           // só vendedoras/admins
     { label: '💰 Comissões', href: '/dashboard/commissions' },
-    { label: '💳 Pagamentos', href: '/dashboard/payments' },
+    { label: '💳 Pagamentos', href: '/dashboard/pagamentos' },
     { label: '🏦 Saques', href: '/dashboard/withdrawals' },
     { label: '🧾 Meus Pedidos', href: '/dashboard/meus-pedidos' },
     { label: '🔐 Alterar Senha', href: '/dashboard/profile/senha' }, // visível pra todos

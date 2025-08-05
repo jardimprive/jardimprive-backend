@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 
 // 🔐 Função de login
 exports.login = async (req, res) => {
+  console.log("Dados recebidos para login:", req.body);
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -11,16 +12,20 @@ exports.login = async (req, res) => {
   }
 
   try {
+    console.log('Tentativa de login para:', email);
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
+      console.log('Usuário não encontrado:', email);
       return res.status(401).json({ error: 'Usuário não encontrado.' });
     }
 
+    console.log('Usuário encontrado:', user.email);
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Senha incorreta para:', email);
       return res.status(401).json({ error: 'Senha incorreta.' });
     }
 

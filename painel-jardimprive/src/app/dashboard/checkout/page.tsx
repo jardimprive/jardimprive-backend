@@ -64,10 +64,9 @@ export default function CheckoutPage() {
       setErro(null);
 
       if (formaPagamento === 'CARTAO') {
-        const res = await api.post('/orders/checkout', {
+        const res = await api.post('/orders', {
           ...payload,
           paymentMethod: 'CARTAO',
-          paymentType: 'CARTAO',
         });
         if (res.data.checkoutUrl) {
           localStorage.removeItem('carrinho');
@@ -78,10 +77,9 @@ export default function CheckoutPage() {
       }
 
       else if (formaPagamento === 'AVISTA') {
-        const res = await api.post('/orders/pix', {
+        const res = await api.post('/orders', {
           ...payload,
           paymentMethod: 'PIX',
-          paymentType: 'AVISTA',
         });
         if (res.data.checkoutUrl) {
           localStorage.removeItem('carrinho');
@@ -94,8 +92,8 @@ export default function CheckoutPage() {
       else if (formaPagamento === 'PARCELADO') {
         const res = await api.post('/orders', {
           ...payload,
-          paymentType: 'PARCELADO',
-          paymentMethod: metodoEntrada,
+          paymentMethod: 'PARCELADO',
+          entryMethod: metodoEntrada,
         });
 
         if (res.data.checkoutUrl) {

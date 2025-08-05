@@ -95,6 +95,7 @@ enum OrderStatus {
 
 enum PaymentMethod {
   AVISTA
+  PIX
   PARCELADO
   CARTAO
 }

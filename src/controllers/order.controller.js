@@ -1,99 +1,224 @@
-const prisma = require('../config/prisma');
-const dayjs = require('dayjs');
-const checkInadimplencia = require('../utils/checkInadimplencia');
-const checkBonus = require('../utils/checkBonus');
-const mercadopago = require('mercadopago');
+const prisma = require("../config/prisma");
+const dayjs = require("dayjs");
+const checkInadimplencia = require("../utils/checkInadimplencia");
+const checkBonus = require("../utils/checkBonus");
+const mercadopago = require("mercadopago");
 
 mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN,
 });
 
 exports.createOrder = async (req, res) => {
-  const { items, paymentType, dueDate } = req.body;
+  const { items, address, paymentMethod, dueDate } = req.body;
+  console.log("Dados recebidos para createOrder:", { items, address, paymentMethod, dueDate });
+
+  if (!items || !address || !paymentMethod) {
+    console.log("Erro: Campos obrigatórios faltando.");
+    return res.status(400).json({ error: "Preencha todos os campos" });
+  }
 
   try {
+    console.log("Verificando usuário...");
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    console.log("Usuário encontrado:", user.email);
 
     if (user.isBlocked) {
-      return res.status(403).json({
-        error: 'Você está bloqueado por inadimplência. Quite seus pagamentos para continuar.',
-      });
+      console.log("Erro: Usuário bloqueado por inadimplência.");
+      return res.status(403).json({ error: "Você está bloqueado por inadimplência. Quite seus pagamentos." });
     }
 
+    console.log("Validando preços dos itens...");
     // VALIDAÇÃO DE PREÇOS VINDOS DO BANCO
-    const validatedItems = await Promise.all(
+    const mpItems = await Promise.all(
       items.map(async (item) => {
         const variation = await prisma.productVariation.findUnique({
           where: { id: item.variationId },
+          include: { product: true },
         });
-        if (!variation) throw new Error('Produto não encontrado');
+        if (!variation) throw new Error("Produto não encontrado");
         return {
-          variationId: item.variationId,
+          title: `${variation.product.name} - ${variation.size}`,
           quantity: item.quantity,
-          price: variation.price,
+          unit_price: variation.price,
+          currency_id: "BRL",
         };
       })
     );
 
+    const total = mpItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+    console.log(`Total do pedido: ${total}`);
+
+    // Criar itens do pedido usando preços validados
+    const validatedItemsForOrder = items.map((item, index) => ({
+      variationId: item.variationId,
+      quantity: item.quantity,
+      price: mpItems[index].unit_price,
+    }));
+
+    console.log("Criando pedido no Prisma...");
     const order = await prisma.order.create({
       data: {
         userId: req.user.id,
-        paymentType,
+        paymentType: paymentMethod,
         items: {
-          create: validatedItems,
-        },
-      },
-      include: {
-        items: {
-          include: {
-            variation: true,
-          },
+          create: validatedItemsForOrder,
         },
       },
     });
-
-    const total = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    console.log(`Pedido criado com ID: ${order.id}`);
 
     const payments = [];
 
-    if (paymentType === 'AVISTA' || paymentType === 'CARTAO') {
+    if (paymentMethod === "PIX") {
+      console.log("Método de pagamento: PIX");
+      // PIX à vista - valor total
       payments.push({
         orderId: order.id,
-        type: 'AVISTA',
+        type: "AVISTA",
         amount: total,
         dueDate: dayjs().toDate(),
-        status: 'PENDENTE',
+        status: "PENDENTE",
       });
-    }
 
-    if (paymentType === 'PARCELADO') {
+      console.log("Criando pagamento PIX no Prisma...");
+      await prisma.payment.createMany({ data: payments });
+      console.log("Pagamento PIX registrado no Prisma.");
+
+      // Criar preferência do Mercado Pago para PIX
+      const preference = {
+        items: mpItems,
+        payment_methods: {
+          excluded_payment_types: [{ id: "credit_card" }, { id: "ticket" }],
+        },
+        back_urls: {
+          success: process.env.MP_SUCCESS_URL,
+          failure: process.env.MP_FAILURE_URL,
+          pending: process.env.MP_PENDING_URL,
+        },
+        auto_return: "approved",
+        metadata: {
+          userId: req.user.id,
+          orderId: order.id,
+          paymentType: "PIX",
+        },
+        external_reference: String(order.id),
+      };
+
+      console.log("Criando preferência do Mercado Pago para PIX...");
+      const result = await mercadopago.preferences.create(preference);
+      console.log("Preferência do Mercado Pago criada com sucesso para PIX.");
+      console.log("Resposta do Mercado Pago (PIX):", result.body);
+      return res.status(200).json({ checkoutUrl: result.body.init_point });
+
+    } else if (paymentMethod === "PARCELADO") {
+      console.log("Método de pagamento: PARCELADO");
+      const { entryMethod } = req.body; // PIX ou CARTAO para a entrada
+      
+      // 50% agora + 50% em 30 dias
       const entrada = total * 0.5;
       const restante = total * 0.5;
 
       payments.push(
         {
           orderId: order.id,
-          type: 'PARCELA_ENTRADA',
+          type: "PARCELA_ENTRADA",
           amount: entrada,
           dueDate: dayjs().toDate(),
-          status: 'PENDENTE',
+          status: "PENDENTE",
         },
         {
           orderId: order.id,
-          type: 'PARCELA_FINAL',
+          type: "PARCELA_FINAL",
           amount: restante,
-          dueDate: dayjs(dueDate).toDate(),
-          status: 'PENDENTE',
+          dueDate: dayjs(dueDate || dayjs().add(30, "day")).toDate(),
+          status: "PENDENTE",
         }
       );
-    }
 
-    await prisma.payment.createMany({ data: payments });
-    await checkInadimplencia(req.user.id);
+      console.log("Registrando pagamentos PARCELADO no Prisma...");
+      await prisma.payment.createMany({ data: payments });
+      console.log("Pagamentos PARCELADO registrados no Prisma.");
+
+      // Criar preferência do Mercado Pago para entrada (50%)
+      const preference = {
+        items: [
+          {
+            title: `Entrada do pedido #${order.id} (50%)`,
+            quantity: 1,
+            unit_price: entrada,
+            currency_id: "BRL",
+          },
+        ],
+        back_urls: {
+          success: process.env.MP_SUCCESS_URL,
+          failure: process.env.MP_FAILURE_URL,
+          pending: process.env.MP_PENDING_URL,
+        },
+        auto_return: "approved",
+        metadata: {
+          userId: req.user.id,
+          orderId: order.id,
+          paymentType: "PARCELADO",
+          entryMethod: entryMethod || "CARTAO",
+        },
+        external_reference: String(order.id),
+      };
+
+      // Se a entrada for PIX, excluir cartão e ticket
+      if (entryMethod === "PIX") {
+        preference.payment_methods = {
+          excluded_payment_types: [{ id: "credit_card" }, { id: "ticket" }],
+        };
+      }
+
+      console.log("Criando preferência do Mercado Pago para PARCELADO...");
+      const result = await mercadopago.preferences.create(preference);
+      console.log("Preferência do Mercado Pago criada com sucesso para PARCELADO.");
+      console.log("Resposta do Mercado Pago (PARCELADO):", result.body);
+      return res.status(200).json({ checkoutUrl: result.body.init_point });
+
+    } else if (paymentMethod === "CARTAO") {
+      console.log("Método de pagamento: CARTAO");
+      // Cartão de crédito - valor total
+      payments.push({
+        orderId: order.id,
+        type: "CARTAO",
+        amount: total,
+        dueDate: dayjs().toDate(),
+        status: "PENDENTE",
+      });
+
+      console.log("Registrando pagamento CARTAO no Prisma...");
+      await prisma.payment.createMany({ data: payments });
+      console.log("Pagamento CARTAO registrado no Prisma.");
+
+      // Criar preferência do Mercado Pago para cartão
+      const preference = {
+        items: mpItems,
+        back_urls: {
+          success: process.env.MP_SUCCESS_URL,
+          failure: process.env.MP_FAILURE_URL,
+          pending: process.env.MP_PENDING_URL,
+        },
+        auto_return: "approved",
+        metadata: {
+          userId: req.user.id,
+          orderId: order.id,
+          paymentType: "CARTAO",
+        },
+        external_reference: String(order.id),
+      };
+
+      console.log("Criando preferência do Mercado Pago para CARTAO...");
+      const result = await mercadopago.preferences.create(preference);
+      console.log("Preferência do Mercado Pago criada com sucesso para CARTAO.");
+      return res.status(200).json({ checkoutUrl: result.body.init_point });
+    }
 
     res.status(201).json(order);
   } catch (error) {
-    res.status(400).json({ error: 'Erro ao criar pedido', details: error.message });
+    console.error("Erro ao criar pedido:", error);
+    res.status(400).json({ error: "Erro ao criar pedido", details: error.message });
   }
 };
 
@@ -113,12 +238,12 @@ exports.getAllOrders = async (req, res) => {
         },
         payments: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar pedidos', details: error.message });
+    res.status(500).json({ error: "Erro ao buscar pedidos", details: error.message });
   }
 };
 
@@ -136,7 +261,7 @@ exports.getOrderById = async (req, res) => {
     },
   });
 
-  if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+  if (!order) return res.status(404).json({ error: "Pedido não encontrado" });
   res.json(order);
 };
 
@@ -157,7 +282,7 @@ exports.updateOrderStatus = async (req, res) => {
       },
     });
 
-    if (status === 'ENTREGUE') {
+    if (status === "ENTREGUE") {
       await checkBonus(order.userId);
 
       if (order.user.teamLeaderId) {
@@ -166,8 +291,8 @@ exports.updateOrderStatus = async (req, res) => {
         const vendasRecentes = await prisma.order.count({
           where: {
             user: { teamLeaderId },
-            status: 'ENTREGUE',
-            createdAt: { gte: dayjs().subtract(30, 'day').toDate() },
+            status: "ENTREGUE",
+            createdAt: { gte: dayjs().subtract(30, "day").toDate() },
           },
         });
 
@@ -194,7 +319,7 @@ exports.updateOrderStatus = async (req, res) => {
 
     res.json(order);
   } catch (error) {
-    res.status(400).json({ error: 'Erro ao atualizar pedido', details: error.message });
+    res.status(400).json({ error: "Erro ao atualizar pedido", details: error.message });
   }
 };
 
@@ -203,229 +328,9 @@ exports.deleteOrder = async (req, res) => {
 
   try {
     await prisma.order.delete({ where: { id } });
-    res.json({ message: 'Pedido deletado com sucesso' });
+    res.json({ message: "Pedido deletado com sucesso" });
   } catch (error) {
-    res.status(400).json({ error: 'Erro ao deletar pedido', details: error.message });
-  }
-};
-
-exports.createOrderWithCheckout = async (req, res) => {
-  const { items, address, paymentMethod, dueDate } = req.body;
-
-  if (!items || !address || !paymentMethod) {
-    return res.status(400).json({ error: 'Preencha todos os campos' });
-  }
-
-  try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-
-    if (user.isBlocked) {
-      return res.status(403).json({ error: 'Você está bloqueado por inadimplência. Quite seus pagamentos.' });
-    }
-
-    // VALIDAÇÃO DE PREÇOS VINDOS DO BANCO
-    const mpItems = await Promise.all(
-      items.map(async (item) => {
-        const variation = await prisma.productVariation.findUnique({
-          where: { id: item.variationId },
-          include: { product: true },
-        });
-        if (!variation) throw new Error('Produto não encontrado');
-        return {
-          title: `${variation.product.name} - ${variation.size}`,
-          quantity: item.quantity,
-          unit_price: variation.price,
-          currency_id: 'BRL',
-        };
-      })
-    );
-
-    const total = mpItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
-    const entrada = total * 0.5;
-
-    // CRIAÇÃO DOS ITENS DO PEDIDO USANDO PREÇOS VALIDADOS
-    const validatedItems = mpItems.map(mpItem => ({
-      variationId: items.find(i => i.variationId === mpItem.title.split(' - ')[1])?.variationId || null,
-      quantity: mpItem.quantity,
-      price: mpItem.unit_price,
-    }));
-
-    // Melhor forma (melhor garantir pelo índice)
-    const validatedItemsForOrder = items.map(item => {
-      const variation = mpItems.find(mp => mp.title.includes(item.variationId)); 
-      return {
-        variationId: item.variationId,
-        quantity: item.quantity,
-        price: mpItems.find(mp => mp.title.includes(item.variationId))?.unit_price || 0,
-      }
-    });
-
-    const order = await prisma.order.create({
-      data: {
-        userId: req.user.id,
-        paymentType: paymentMethod,
-        items: {
-          create: validatedItemsForOrder,
-        },
-      },
-    });
-
-    const payments = [];
-
-    if (paymentMethod === 'PARCELADO') {
-      payments.push(
-        {
-          orderId: order.id,
-          type: 'PARCELA_ENTRADA',
-          amount: entrada,
-          dueDate: dayjs().toDate(),
-          status: 'PENDENTE',
-        },
-        {
-          orderId: order.id,
-          type: 'PARCELA_FINAL',
-          amount: total - entrada,
-          dueDate: dayjs(dueDate).toDate(),
-          status: 'PENDENTE',
-        }
-      );
-    } else {
-      payments.push({
-        orderId: order.id,
-        type: 'AVISTA',
-        amount: total,
-        dueDate: dayjs().toDate(),
-        status: 'PENDENTE',
-      });
-    }
-
-    await prisma.payment.createMany({ data: payments });
-
-    const preference = {
-      items: [
-        {
-          title: `Entrada do pedido #${order.id}`,
-          quantity: 1,
-          unit_price: entrada,
-          currency_id: 'BRL',
-        },
-      ],
-      back_urls: {
-        success: process.env.MP_SUCCESS_URL,
-        failure: process.env.MP_FAILURE_URL,
-        pending: process.env.MP_PENDING_URL,
-      },
-      auto_return: 'approved',
-      metadata: {
-        userId: req.user.id,
-        orderId: order.id,
-        paymentType: paymentMethod,
-      },
-      external_reference: String(order.id),
-    };
-
-    const result = await mercadopago.preferences.create(preference);
-
-    res.status(200).json({ checkoutUrl: result.body.init_point });
-  } catch (error) {
-    console.error('Erro no checkout:', error);
-    res.status(500).json({ error: 'Erro ao criar link de pagamento', details: error.message });
-  }
-};
-
-exports.createOrderPix = async (req, res) => {
-  const { items, address } = req.body;
-
-  if (!items || !address) {
-    return res.status(400).json({ error: 'Preencha todos os campos obrigatórios' });
-  }
-
-  try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-
-    if (!user || user.isBlocked) {
-      return res.status(403).json({ error: 'Usuário bloqueado por inadimplência' });
-    }
-
-    const mpItems = await Promise.all(
-      items.map(async (item) => {
-        const variation = await prisma.productVariation.findUnique({
-          where: { id: item.variationId },
-          include: { product: true },
-        });
-        if (!variation) throw new Error('Produto não encontrado');
-
-        return {
-          title: `${variation.product.name} - ${variation.size}`,
-          quantity: item.quantity,
-          unit_price: variation.price,
-          currency_id: 'BRL',
-        };
-      })
-    );
-
-    const total = mpItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
-
-    const orderItems = await Promise.all(
-      items.map(async (item) => {
-        const variation = await prisma.productVariation.findUnique({
-          where: { id: item.variationId },
-        });
-        if (!variation) throw new Error('Produto não encontrado');
-
-        return {
-          variationId: item.variationId,
-          quantity: item.quantity,
-          price: variation.price,
-        };
-      })
-    );
-
-    const order = await prisma.order.create({
-      data: {
-        userId: req.user.id,
-        paymentType: 'PIX',
-        items: {
-          create: orderItems,
-        },
-      },
-    });
-
-    await prisma.payment.create({
-      data: {
-        orderId: order.id,
-        type: 'PIX',
-        amount: total,
-        dueDate: dayjs().toDate(),
-        status: 'PENDENTE',
-      },
-    });
-
-    const preference = {
-      items: mpItems,
-      payment_methods: {
-        excluded_payment_types: [{ id: 'credit_card' }, { id: 'ticket' }],
-      },
-      back_urls: {
-        success: process.env.MP_SUCCESS_URL,
-        failure: process.env.MP_FAILURE_URL,
-        pending: process.env.MP_PENDING_URL,
-      },
-      auto_return: 'approved',
-      metadata: {
-        userId: req.user.id,
-        orderId: order.id,
-        paymentType: 'PIX',
-      },
-      external_reference: String(order.id),
-    };
-
-    const result = await mercadopago.preferences.create(preference);
-
-    res.status(200).json({ checkoutUrl: result.body.init_point });
-  } catch (error) {
-    console.error('Erro no checkout PIX:', error);
-    res.status(500).json({ error: 'Erro ao criar link PIX', details: error.message });
+    res.status(400).json({ error: "Erro ao deletar pedido", details: error.message });
   }
 };
 
@@ -441,13 +346,13 @@ exports.createOrderFinal = async (req, res) => {
     });
 
     if (!order) {
-      return res.status(404).json({ error: 'Pedido não encontrado' });
+      return res.status(404).json({ error: "Pedido não encontrado" });
     }
 
-    const parcelaFinal = order.payments.find((p) => p.type === 'PARCELA_FINAL');
+    const parcelaFinal = order.payments.find((p) => p.type === "PARCELA_FINAL");
 
     if (!parcelaFinal) {
-      return res.status(400).json({ error: 'Parcela final não encontrada para este pedido' });
+      return res.status(400).json({ error: "Parcela final não encontrada para este pedido" });
     }
 
     const preference = {
@@ -456,7 +361,7 @@ exports.createOrderFinal = async (req, res) => {
           title: `Parcela final do pedido #${order.id}`,
           quantity: 1,
           unit_price: parcelaFinal.amount,
-          currency_id: 'BRL',
+          currency_id: "BRL",
         },
       ],
       back_urls: {
@@ -464,11 +369,11 @@ exports.createOrderFinal = async (req, res) => {
         failure: process.env.MP_FAILURE_URL,
         pending: process.env.MP_PENDING_URL,
       },
-      auto_return: 'approved',
+      auto_return: "approved",
       metadata: {
         userId: order.userId,
         orderId: order.id,
-        paymentType: 'PARCELA_FINAL',
+        paymentType: "PARCELA_FINAL",
       },
       external_reference: String(order.id),
     };
@@ -477,7 +382,11 @@ exports.createOrderFinal = async (req, res) => {
 
     res.status(200).json({ checkoutUrl: result.body.init_point });
   } catch (error) {
-    console.error('Erro no checkout parcela final:', error);
-    res.status(500).json({ error: 'Erro ao criar link de pagamento final', details: error.message });
+    console.error("Erro no checkout parcela final:", error);
+    res.status(500).json({ error: "Erro ao criar link de pagamento final", details: error.message });
   }
 };
+
+
+
+
