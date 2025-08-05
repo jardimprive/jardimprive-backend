@@ -7,10 +7,6 @@
     "start": "node server.js",
     "build": "prisma generate && next build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@prisma/client": "^6.13.0",
     "bcrypt": "^6.0.0",
