@@ -11,5 +11,8 @@
   "env": {
     "DATABASE_URL": "postgresql://neondb_owner:npg_qx2UuWL8gbFo@ep-wispy-grass-a8d515dn-pooler.eastus2.azure.neon.tech/neondb?sslmode=require",
     "JWT_SECRET": "segredo_supersecreto"
+  },
+  "scripts": {
+    "build": "prisma generate && next build"
   }
 }
