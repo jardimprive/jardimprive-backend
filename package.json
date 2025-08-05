@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "build": "prisma generate && next build"  // Este comando irá gerar o Prisma Client e depois fazer o build do Next.js
+    "build": "prisma generate && next build"  
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",
