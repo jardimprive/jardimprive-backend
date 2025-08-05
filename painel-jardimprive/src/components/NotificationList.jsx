@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../lib/api'; // ajuste o caminho para onde está seu api.js
 
 // Estilo visual de acordo com o tipo
 const notificationStyles = {
@@ -12,7 +12,7 @@ const NotificationList = () => {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    axios.get('/api/notifications') // ou 'http://localhost:3001/api/notifications' se você não usa proxy
+    api.get('/notifications') // usa a baseURL + '/notifications'
       .then((res) => {
         setNotifications(res.data);
       })
@@ -30,7 +30,9 @@ const NotificationList = () => {
       {notifications.map((n, index) => (
         <div
           key={index}
-          className={`flex items-start border-l-4 p-4 rounded shadow-sm ${notificationStyles[n.type] || 'bg-gray-100 text-gray-800 border-gray-300'}`}
+          className={`flex items-start border-l-4 p-4 rounded shadow-sm ${
+            notificationStyles[n.type] || 'bg-gray-100 text-gray-800 border-gray-300'
+          }`}
         >
           <div className="text-3xl mr-3">{n.icon}</div>
           <div>
