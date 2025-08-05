@@ -65,7 +65,7 @@ export default function WithdrawalsPage() {
         <CardContent>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <p className="text-3xl font-bold text-green-600">
-              R$ {commission.toFixed(2)}
+              R$ {typeof commission === 'number' ? commission.toFixed(2) : '0,00'}
             </p>
             <Button
               onClick={handleWithdraw}
@@ -96,10 +96,19 @@ export default function WithdrawalsPage() {
                   className="border rounded-md p-3 bg-white shadow-sm"
                 >
                   <p className="font-semibold">
-                    Valor: <span className="text-green-700">R$ {item.amount.toFixed(2)}</span>
+                    Valor:{' '}
+                    <span className="text-green-700">
+                      R${' '}
+                      {typeof item.amount === 'number'
+                        ? item.amount.toFixed(2)
+                        : '0,00'}
+                    </span>
                   </p>
                   <p className="text-sm text-gray-600">
-                    Data: {new Date(item.createdAt).toLocaleDateString()}
+                    Data:{' '}
+                    {item.createdAt
+                      ? new Date(item.createdAt).toLocaleDateString()
+                      : '—'}
                   </p>
                   <p className="text-sm">
                     Status:{' '}

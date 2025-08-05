@@ -60,10 +60,16 @@ export default function BonusPage() {
                 >
                   <div>
                     <p className="font-semibold text-lg">
-                      Valor: R$ {item.amount.toFixed(2)}
+                      Valor: R${' '}
+                      {typeof item.amount === 'number'
+                        ? item.amount.toFixed(2)
+                        : '0,00'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Data: {new Date(item.createdAt).toLocaleDateString()}
+                      Data:{' '}
+                      {item.createdAt
+                        ? new Date(item.createdAt).toLocaleDateString()
+                        : '—'}
                     </p>
                   </div>
                   <div className="mt-2 sm:mt-0 text-right flex items-center justify-end">

@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const profileRes = await api.get('/users/profile');
+      const profileRes = await api.get('/api/profile/me');
       const role = profileRes.data.role;
       setUserRole(role);
 
@@ -59,7 +59,7 @@ export default function DashboardPage() {
         const pendings = Array.isArray(paymentRes.data) ? paymentRes.data : [];
         setPendingPayments(pendings.filter((p: any) => p.status !== 'PAGO').reduce((acc, item) => acc + item.amount, 0));
 
-        const summaryRes = await api.get('/dashboard/summary'); // já corrigido (rota no backend virou /api/dashboard)
+        const summaryRes = await api.get('/dashboard/summary');
         setSummary(summaryRes.data);
 
         const metaRes = await api.get('/bonus/progress');
@@ -135,7 +135,7 @@ export default function DashboardPage() {
               <p>
                 Você completou <strong>{meta.totalVendasValidas}</strong> de <strong>60</strong> vendas.
               </p>
-              <Progress value={meta.progresso} className={getProgressColor()} />
+              <Progress value={Math.min(meta.progresso, 100)} className={getProgressColor()} />
               <p>{meta.progresso.toFixed(0)}% da meta concluída</p>
               <p className="text-sm text-muted-foreground">
                 A cada 10 vendas de no mínimo R$250 você ganha <strong>R$200</strong> de bônus.
@@ -171,19 +171,19 @@ export default function DashboardPage() {
       {userRole === 'VENDEDORA' && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {cards.map((card, index) => (
+            {cards.map((card) => (
               <motion.div
-                key={index}
+                key={card.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: 0.1 }}
               >
                 <Card className={`${card.color} rounded-2xl shadow-md`}>
                   <CardHeader>
                     <CardTitle className="text-lg">{card.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-3xl font-bold">R$ {card.value.toFixed(2)}</p>
+                    <p className="text-3xl font-bold">R$ {Number(card.value || 0).toFixed(2)}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
                   </Pie>
                   <Tooltip
                     formatter={(value) =>
-                      `R$ ${(value as number).toFixed(2).replace('.', ',')}`
+                      `R$ ${Number(value).toFixed(2).replace('.', ',')}`
                     }
                   />
                 </PieChart>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                   <YAxis />
                   <Tooltip
                     formatter={(value) =>
-                      `R$ ${(value as number).toFixed(2).replace('.', ',')}`
+                      `R$ ${Number(value).toFixed(2).replace('.', ',')}`
                     }
                   />
                   <Legend />

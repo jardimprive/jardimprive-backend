@@ -66,10 +66,14 @@ export default function CommissionsAdminPage() {
             <tbody>
               {commissions.map((c) => (
                 <tr key={c.id} className="border-b even:bg-gray-50">
-                  <td className="py-2 px-2 sm:px-4">{c.user.name}</td>
+                  <td className="py-2 px-2 sm:px-4">{c?.user?.name ?? '—'}</td>
                   <td className="py-2 px-2 sm:px-4 break-all">{c.orderId}</td>
-                  <td className="py-2 px-2 sm:px-4">R$ {c.amount.toFixed(2)}</td>
-                  <td className="py-2 px-2 sm:px-4">{format(new Date(c.createdAt), 'dd/MM/yyyy')}</td>
+                  <td className="py-2 px-2 sm:px-4">
+                    R$ {typeof c.amount === 'number' ? c.amount.toFixed(2) : '0,00'}
+                  </td>
+                  <td className="py-2 px-2 sm:px-4">
+                    {c.createdAt ? format(new Date(c.createdAt), 'dd/MM/yyyy') : '—'}
+                  </td>
                   <td className="py-2 px-2 sm:px-4">
                     <span
                       className={`px-2 py-1 rounded text-xs font-semibold ${

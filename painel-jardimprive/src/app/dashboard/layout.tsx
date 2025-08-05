@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: '📦 Produtos', href: '/dashboard/produtos' },
     { label: '➕ Cadastrar Produto', href: '/dashboard/produtos/novo' },
     { label: '📊 Pedidos', href: '/dashboard/pedidos' },
-    { label: '🧾 Saques (admin)', href: '/dashboard/saques' },
+    { label: '🧾 Saques (admin)', href: '/dashboard/withdrawals/admin' },
     { label: '🎁 Bônus (admin)', href: '/dashboard/bonus-admin' },
     { label: '🏨 Reservas do Hotel (Admin)', href: '/dashboard/hotel/admin' },
     { label: '📤 Relatórios', href: '/dashboard/relatorios' },
