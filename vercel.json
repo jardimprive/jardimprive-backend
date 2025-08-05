@@ -1,0 +1,18 @@
+{
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "your-database-url",
+    "JWT_SECRET": "your-jwt-secret"
+  },
+  "scripts": {
+    "build": "prisma generate && next build"
+  }
+}
