@@ -7,6 +7,7 @@ const orderRoutes = require("./routes/order.routes");
 const mpRoutes = require("./routes/mercadopago.routes");
 const authRoutes = require("./routes/auth.routes");
 const productRoutes = require("./routes/product.routes");
+const profileRoutes = require("./routes/profile.routes");
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/mercadopago", mpRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/profile", profileRoutes);
 
 app.get("/", (req, res) => {
   res.send("🌸 API Jardim Privé funcionando perfeitamente!");
