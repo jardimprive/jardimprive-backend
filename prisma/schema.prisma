@@ -8,227 +8,30 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  name      String
-  email     String     @unique
-  cpf       String     @unique
-  phone     String
-  address   String
+  id        String   @id @default(uuid())
+  email     String   @unique
   password  String
-  role      Role
-  status    UserStatus @default(ATIVA)
-  isBlocked Boolean    @default(false)
-  photo     String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  orders        Order[]
-  commissions   Commission[]
-  bonuses       Bonus[]
-  withdrawals   WithdrawalRequest[]
-  logins        LoginHistory[]
-  hotelBooking  HotelBooking?
-  notifications Notification[]
-
-  // ✅ Programa de Líder de Equipe
-  isTeamLeader      Boolean                    @default(false)
-  teamCode          String?                    @unique
-  teamCommissions   TeamLeaderCommission[]     @relation("LiderComissao")
-  vendasNaEquipe    TeamLeaderCommission[]     @relation("VendedoraComissao")
-}
-
-enum Role {
-  ADMIN
-  VENDEDORA
-}
-
-enum UserStatus {
-  ATIVA
-  BLOQUEADA
-  INADIMPLENTE
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id          String             @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
-  description String
-  image       String
-  active      Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  variations  ProductVariation[]
-}
-
-model ProductVariation {
-  id         String      @id @default(uuid())
-  product    Product     @relation(fields: [productId], references: [id])
-  productId  String
-  sku        String      @unique
-  size       String
-  price      Float
-  stock      Int
-  orderItems OrderItem[]
+  description String?
+  price       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Order {
-  id           String        @id @default(uuid())
-  user         User          @relation(fields: [userId], references: [id])
-  userId       String
-  status       OrderStatus   @default(AGUARDANDO_APROVACAO)
-  paymentType  PaymentMethod
-  trackingCode String?
-  isBlocked    Boolean       @default(false)
-  items        OrderItem[]
-  commissions  Commission[]
-  payments     Payment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-}
-
-enum OrderStatus {
-  AGUARDANDO_APROVACAO
-  APROVADO
-  ENVIADO
-  EM_TRANSITO
-  ENTREGUE
-  CANCELADO
-}
-
-enum PaymentMethod {
-  AVISTA
-  PIX
-  PARCELADO
-  CARTAO
-}
-
-model OrderItem {
-  id          String           @id @default(uuid())
-  order       Order            @relation(fields: [orderId], references: [id])
-  orderId     String
-  variation   ProductVariation @relation(fields: [variationId], references: [id])
-  variationId String
-  quantity    Int
-  price       Float
-}
-
-model Payment {
-  id        String        @id @default(uuid())
-  order     Order         @relation(fields: [orderId], references: [id])
-  orderId   String
-  type      PaymentType
-  amount    Float
-  dueDate   DateTime
-  status    PaymentStatus @default(PENDENTE)
-  createdAt DateTime      @default(now())
-}
-
-enum PaymentType {
-  AVISTA
-  PARCELA_ENTRADA
-  PARCELA_FINAL
-  CARTAO
-}
-
-enum PaymentStatus {
-  PENDENTE
-  PAGO
-  ATRASADO
-}
-
-model Commission {
-  id        String           @id @default(uuid())
-  user      User             @relation(fields: [userId], references: [id])
-  userId    String
-  order     Order?           @relation(fields: [orderId], references: [id])
-  orderId   String?
-  amount    Float
-  status    CommissionStatus @default(PENDENTE)
-  createdAt DateTime         @default(now())
-}
-
-enum CommissionStatus {
-  PENDENTE
-  PAGA
-}
-
-model Bonus {
-  id        String      @id @default(uuid())
-  user      User        @relation(fields: [userId], references: [id])
-  userId    String
-  type      BonusType
-  value     Float
-  status    BonusStatus @default(PENDENTE)
-  createdAt DateTime    @default(now())
-}
-
-enum BonusType {
-  META10
-  META20
-  META30
-  META40
-  META50
-  META60
-  HOTEL_MAJESTIC
-}
-
-enum BonusStatus {
-  PENDENTE
-  PAGO
-}
-
-model WithdrawalRequest {
-  id        String           @id @default(uuid())
-  user      User             @relation(fields: [userId], references: [id])
-  userId    String
-  amount    Float
-  pixKey    String?
-  status    WithdrawalStatus @default(PENDENTE)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-}
-
-enum WithdrawalStatus {
-  PENDENTE
-  APROVADO
-  RECUSADO
-}
-
-model LoginHistory {
   id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
-  ip        String
-  userAgent String?
+  productId String
+  quantity  Int
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model HotelBooking {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String   @unique
-  date      DateTime
-  createdAt DateTime @default(now())
-}
 
-model Notification {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  title     String
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-}
-
-model TeamLeaderCommission {
-  id        String   @id @default(uuid())
-
-  leader    User     @relation("LiderComissao", fields: [leaderId], references: [id])
-  leaderId  String
-
-  seller    User     @relation("VendedoraComissao", fields: [sellerId], references: [id])
-  sellerId  String
-
-  orderId   String
-  value     Float
-  createdAt DateTime @default(now())
-}
