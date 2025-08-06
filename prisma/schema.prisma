@@ -11,9 +11,38 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  name      String? // Mantido da sua versão local
+  role      Role
+  status    UserStatus @default(ATIVA)
+  isBlocked Boolean    @default(false)
+  photo     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  orders        Order[]
+  commissions   Commission[]
+  bonuses       Bonus[]
+  withdrawals   WithdrawalRequest[]
+  logins        LoginHistory[]
+  hotelBooking  HotelBooking?
+  notifications Notification[]
+
+  // ✅ Programa de Líder de Equipe
+  isTeamLeader    Boolean                @default(false)
+  teamCode        String?                @unique
+  teamCommissions TeamLeaderCommission[] @relation("LiderComissao")
+  vendasNaEquipe  TeamLeaderCommission[] @relation("VendedoraComissao")
+}
+
+enum Role {
+  ADMIN
+  VENDEDORA
+}
+
+enum UserStatus {
+  ATIVA
+  BLOQUEADA
+  INADIMPLENTE
 }
 
 model Product {
@@ -34,4 +63,26 @@ model Order {
   updatedAt DateTime @updatedAt
 }
 
+model Notification {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
 
+model TeamLeaderCommission {
+  id String @id @default(uuid())
+
+  leader   User   @relation("LiderComissao", fields: [leaderId], references: [id])
+  leaderId String
+
+  seller   User   @relation("VendedoraComissao", fields: [sellerId], references: [id])
+  sellerId String
+
+  orderId   String
+  value     Float
+  createdAt DateTime @default(now())
+}
