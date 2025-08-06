@@ -31,10 +31,10 @@ model User {
   notifications Notification[]
 
   // ✅ Programa de Líder de Equipe
-  isTeamLeader      Boolean                    @default(false)
-  teamCode          String?                    @unique
-  teamCommissions   TeamLeaderCommission[]     @relation("LiderComissao")
-  vendasNaEquipe    TeamLeaderCommission[]     @relation("VendedoraComissao")
+  isTeamLeader    Boolean                @default(false)
+  teamCode        String?                @unique
+  teamCommissions TeamLeaderCommission[] @relation("LiderComissao")
+  vendasNaEquipe  TeamLeaderCommission[] @relation("VendedoraComissao")
 }
 
 enum Role {
@@ -220,13 +220,13 @@ model Notification {
 }
 
 model TeamLeaderCommission {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  leader    User     @relation("LiderComissao", fields: [leaderId], references: [id])
-  leaderId  String
+  leader   User   @relation("LiderComissao", fields: [leaderId], references: [id])
+  leaderId String
 
-  seller    User     @relation("VendedoraComissao", fields: [sellerId], references: [id])
-  sellerId  String
+  seller   User   @relation("VendedoraComissao", fields: [sellerId], references: [id])
+  sellerId String
 
   orderId   String
   value     Float
