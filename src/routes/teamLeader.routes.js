@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const teamLeaderController = require('../controllers/teamLeader.controller');
+const teamLeaderController = require('../controllers/teamleader.controller');
 const auth = require('../middlewares/auth.middleware');
 
 // Todas as rotas abaixo exigem que o usuário esteja autenticado (vendedora líder)
